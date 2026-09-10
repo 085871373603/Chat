@@ -1,0 +1,51 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && newData.child('emailVerified').val() === (auth.token.email_verified === true)",
+        ".validate": "newData.hasChildren(['displayName','emailVerified']) && newData.child('displayName').isString() && newData.child('displayName').val().length <= 40 && newData.child('emailVerified').isBoolean()"
+      }
+    },
+
+    "emailIndex": {
+      "$hash": {
+        ".read": "auth != null && auth.token.email_verified === true",
+        ".write": "auth != null && auth.token.email_verified === true && newData.isString() && newData.val() === auth.uid && !data.exists()",
+        ".validate": "$hash.length === 64 && newData.isString()"
+      }
+    },
+
+    "contacts": {
+      "$uid": {
+        ".read": "auth != null && auth.token.email_verified === true && auth.uid === $uid",
+        "$peerUid": {
+          ".write": "auth != null && auth.token.email_verified === true && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['displayName','emailHint','addedAt']) && newData.child('displayName').isString() && newData.child('displayName').val().length <= 40 && newData.child('emailHint').isString() && newData.child('emailHint').val().length <= 254 && newData.child('addedAt').isNumber()"
+        }
+      }
+    },
+
+    "chats": {
+      "$chatId": {
+        "participants": {
+          "$uid": {
+            ".read": "auth != null && auth.token.email_verified === true && data.parent().parent().child('participants').child(auth.uid).val() === true",
+            ".write": "auth != null && auth.token.email_verified === true && auth.uid === $uid && newData.val() === true",
+            ".validate": "newData.isBoolean() && newData.val() === true"
+          }
+        },
+        "messages": {
+          "$messageId": {
+            ".read": "auth != null && auth.token.email_verified === true && data.parent().parent().child('participants').child(auth.uid).val() === true",
+            ".write": "auth != null && auth.token.email_verified === true && newData.child('senderId').val() === auth.uid && data.exists() === false && root.child('chats').child($chatId).child('participants').child(auth.uid).val() === true",
+            ".validate": "newData.hasChildren(['senderId','text','createdAt']) && newData.child('senderId').isString() && newData.child('senderId').val() === auth.uid && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 4000 && newData.child('createdAt').isNumber()"
+          }
+        }
+      }
+    }
+  }
+}
