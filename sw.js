@@ -1,4 +1,4 @@
-const CACHE_NAME = "arinex-chat-v1";
+const CACHE_NAME = "arinex-chat-v1.1";
 const APP_SHELL = [
   "./",
   "./index.html",
