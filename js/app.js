@@ -27,7 +27,43 @@ async function sha256Hex(value){const bytes=new TextEncoder().encode(value);cons
 async function waitFor(p,ms=15000){let t;const timeout=new Promise((_,rej)=>t=setTimeout(()=>rej(new Error('Koneksi ke Firebase Realtime Database terlalu lama. Periksa koneksi internet, URL database, dan Rules.')),ms));try{return await Promise.race([p,timeout])}finally{clearTimeout(t)}}
 async function refreshUser(forceVerified=false){if(!auth.currentUser)throw new Error('Sesi tidak ditemukan.');await reload(auth.currentUser);await auth.currentUser.getIdToken(true);currentUser=auth.currentUser;if(forceVerified&&!currentUser.emailVerified)throw new Error('Email belum terverifikasi.');return currentUser}
 function renderMe(){const name=safeText(myProfile?.displayName,40)||safeText(currentUser?.displayName,40)||normalizeEmail(currentUser?.email).split('@')[0]||'Pengguna';const email=currentUser?.email||'';['myName','menuName'].forEach(id=>$(id).textContent=name);['myEmail','menuEmail'].forEach(id=>$(id).textContent=email);return name}
-async function ensureProfile(user){await refreshUser(true);const email=normalizeEmail(user.email);const hash=await sha256Hex(email);const uref=ref(db,`users/${user.uid}`),pref=ref(db,`publicProfiles/${user.uid}`),iref=ref(db,`emailIndex/${hash}`);const [us,ps,is]=await Promise.all([waitFor(get(uref)),waitFor(get(pref)),waitFor(get(iref))]);const old=us.exists()?us.val():{};const name=safeText(user.displayName,40)||safeText(old.displayName,40)||email.split('@')[0]||'Pengguna';const now=Date.now();const updates={};if(!us.exists())updates[`users/${user.uid}`]={displayName:name,createdAt:now,updatedAt:now};else if(old.displayName!==name)updates[`users/${user.uid}/displayName`]=name;updates[`users/${user.uid}/updatedAt`]=now;if(!ps.exists()||ps.val()?.displayName!==name)updates[`publicProfiles/${user.uid}`]={displayName:name,updatedAt:now};if(!is.exists())updates[`emailIndex/${hash}`]=user.uid;if(Object.keys(updates).length)await waitFor(update(ref(db),updates));myProfile={...(us.exists()?old:{}),displayName:name,updatedAt:now,createdAt:old.createdAt||now};renderMe()}
+async function syncProfile(user){
+  if(!user?.uid || !user?.email) return;
+  const email=normalizeEmail(user.email);
+  const hash=await sha256Hex(email);
+  const name=safeText(user.displayName,40) || email.split('@')[0] || 'Pengguna';
+  const now=Date.now();
+  const root=ref(db);
+  const profileWrites={
+    [`users/${user.uid}`]:{displayName:name,createdAt:now,updatedAt:now},
+    [`publicProfiles/${user.uid}`]:{displayName:name,updatedAt:now}
+  };
+  await waitFor(update(root,profileWrites),10000);
+  // emailIndex is immutable by Rules, so never include it in a multi-location update.
+  try{
+    const idx=await waitFor(get(ref(db,`emailIndex/${hash}`)),7000);
+    if(!idx.exists()) await waitFor(set(ref(db,`emailIndex/${hash}`),user.uid),7000);
+  }catch(indexError){
+    console.warn('EMAIL INDEX SYNC',indexError);
+  }
+  myProfile={displayName:name,createdAt:now,updatedAt:now};
+  renderMe();
+}
+async function enterChat(user){
+  currentUser=user;
+  renderMe();
+  setView('chat');
+  listenContacts();
+  // Database/profile sync is intentionally non-blocking: Firebase Auth login must never be held hostage by RTDB.
+  syncProfile(user).then(()=>{
+    toast('Akun siap.');
+  }).catch(err=>{
+    console.error('PROFILE SYNC',err);
+    toast(err?.code==='PERMISSION_DENIED' ? 'Login berhasil. Periksa Firebase Rules untuk fitur chat.' : 'Login berhasil. Data chat sedang dicoba ulang.');
+  });
+  setPresence(true);
+}
+
 async function sendVerification(){if(!currentUser)return;const remain=verifyCooldownUntil-Date.now();if(remain>0){notice($('verifyNotice'),`Tunggu ${Math.ceil(remain/1000)} detik sebelum mengirim ulang.`);return}try{await sendEmailVerification(currentUser,actionCodeSettings());verifyCooldownUntil=Date.now()+60000;notice($('verifyNotice'),'Email verifikasi dikirim. Periksa Inbox, Spam, Promosi, atau Updates.')}catch(e){console.error(e);notice($('verifyNotice'),firebaseMessage(e),'error')}}
 function closeMenu(){const m=$('accountMenu');m.classList.add('hidden');m.setAttribute('aria-hidden','true')}
 function toggleMenu(){const m=$('accountMenu'),hidden=m.classList.toggle('hidden');m.setAttribute('aria-hidden',String(hidden));renderMe()}
@@ -41,17 +77,86 @@ async function sendMessage(){const input=$('messageInput'),text=safeText(input.v
 function clearActive(){if(messagesUnsub)off(ref(db,`chats/${activeChatId}/messages`));messagesUnsub=null;activeUid=null;activeChatId=null;views.chat.classList.remove('mobile-open');$('activeConversation').classList.add('hidden');$('welcomeConversation').classList.remove('hidden');$('messageList').innerHTML='';renderContacts()}
 function setPresence(online){if(!currentUser?.emailVerified)return;const r=ref(db,`presence/${currentUser.uid}`);if(online){set(r,{online:true,lastSeen:serverTimestamp()}).catch(()=>{});presenceDisconnect?.cancel?.();presenceDisconnect=onDisconnect(r);presenceDisconnect.set({online:false,lastSeen:serverTimestamp()}).catch(()=>{})}else{set(r,{online:false,lastSeen:serverTimestamp()}).catch(()=>{})}}
 function cleanup(){if(contactsUnsub)off(ref(db,`contacts/${currentUser?.uid}`));if(messagesUnsub&&activeChatId)off(ref(db,`chats/${activeChatId}/messages`));contactsUnsub=null;messagesUnsub=null;presenceDisconnect?.cancel?.();presenceDisconnect=null}
-async function initializeChat(user){if(!user.emailVerified)throw new Error('Email belum terverifikasi.');await ensureProfile(user);setView('chat');listenContacts();setPresence(true)}
+async function initializeChat(user){if(!user?.emailVerified)throw new Error('Email belum terverifikasi.');await enterChat(user)}
 async function logout(){closeMenu();setPresence(false);cleanup();try{await signOut(auth)}catch(e){console.error(e);toast('Gagal keluar. Coba lagi.')}}
 
-$('loginForm').addEventListener('submit',async e=>{e.preventDefault();if(authBusy)return;const email=normalizeEmail($('loginEmail').value),pass=$('loginPassword').value;if(!isEmail(email)||!pass){notice($('authNotice'),'Email dan password wajib diisi dengan benar.','error');return}await persistenceReady.catch(()=>{});authBusy=true;const b=e.submitter;b.disabled=true;b.textContent='Memeriksa…';clearNotice($('authNotice'));try{const cred=await waitFor(signInWithEmailAndPassword(auth,email,pass),15000);currentUser=cred.user;await refreshUser(false);if(!currentUser.emailVerified){$('verifyAddress').textContent=currentUser.email;setView('verify');notice($('verifyNotice'),'Login berhasil. Selesaikan verifikasi email terlebih dahulu.','error');return}await waitFor(initializeChat(currentUser),15000);$('loginForm').reset()}catch(err){console.error('LOGIN',err);notice($('authNotice'),firebaseMessage(err),'error')}finally{authBusy=false;b.disabled=false;b.textContent='Masuk'}});
+$('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(authBusy)return;
+  const email=normalizeEmail($('loginEmail').value),pass=$('loginPassword').value;
+  if(!isEmail(email)||!pass){notice($('authNotice'),'Email dan password wajib diisi dengan benar.','error');return}
+  await persistenceReady.catch(()=>{});
+  authBusy=true;
+  const b=e.submitter;
+  b.disabled=true;
+  b.textContent='Masuk…';
+  clearNotice($('authNotice'));
+  try{
+    const cred=await waitFor(signInWithEmailAndPassword(auth,email,pass),15000);
+    currentUser=cred.user;
+    if(!currentUser.emailVerified){
+      $('verifyAddress').textContent=currentUser.email||'';
+      setView('verify');
+      notice($('verifyNotice'),'Login berhasil. Selesaikan verifikasi email terlebih dahulu.','error');
+      return;
+    }
+    // Do not wait for RTDB. Authentication success should always take the user into the app.
+    await enterChat(currentUser);
+    $('loginForm').reset();
+  }catch(err){
+    console.error('LOGIN',err);
+    notice($('authNotice'),firebaseMessage(err),'error');
+  }finally{
+    authBusy=false;
+    b.disabled=false;
+    b.textContent='Masuk';
+  }
+});
 $('registerForm').addEventListener('submit',async e=>{e.preventDefault();if(authBusy)return;const name=safeText($('registerName').value,40),email=normalizeEmail($('registerEmail').value),p1=$('registerPassword').value,p2=$('registerPassword2').value;if(!name||!isEmail(email))return notice($('authNotice'),'Nama dan email wajib diisi.','error');if(!isStrongPassword(p1))return notice($('authNotice'),'Password harus 8–72 karakter dan memiliki huruf besar, kecil, angka, serta simbol.','error');if(p1!==p2)return notice($('authNotice'),'Konfirmasi password tidak sama.','error');await persistenceReady.catch(()=>{});authBusy=true;const b=e.submitter;b.disabled=true;b.textContent='Membuat…';try{const cred=await createUserWithEmailAndPassword(auth,email,p1);await updateProfile(cred.user,{displayName:name});currentUser=cred.user;await sendEmailVerification(currentUser,actionCodeSettings());$('registerForm').reset();$('verifyAddress').textContent=email;setView('verify');notice($('verifyNotice'),'Akun dibuat. Silakan verifikasi email Anda.')}catch(err){console.error('REGISTER',err);notice($('authNotice'),firebaseMessage(err),'error')}finally{authBusy=false;b.disabled=false;b.textContent='Daftar'}});
 $('resetForm').addEventListener('submit',async e=>{e.preventDefault();const email=normalizeEmail($('resetEmail').value);if(!isEmail(email))return notice($('authNotice'),'Masukkan email yang valid.','error');const b=e.submitter;b.disabled=true;b.textContent='Mengirim…';try{await sendPasswordResetEmail(auth,email,actionCodeSettings());notice($('authNotice'),'Tautan reset dikirim jika akun tersedia.');$('resetForm').reset()}catch(err){console.error(err);notice($('authNotice'),firebaseMessage(err),'error')}finally{b.disabled=false;b.textContent='Kirim tautan'}});
 $('showRegister').addEventListener('click',()=>switchAuth('register'));$('showLogin').addEventListener('click',()=>switchAuth('login'));$('showReset').addEventListener('click',()=>switchAuth('reset'));$('backToLogin').addEventListener('click',()=>switchAuth('login'));
-$('resendVerification').addEventListener('click',sendVerification);$('verifyLogout').addEventListener('click',logout);$('checkVerification').addEventListener('click',async()=>{try{await refreshUser(false);if(!currentUser.emailVerified){notice($('verifyNotice'),'Belum terverifikasi. Buka email dan klik tautannya.','error');return}await initializeChat(currentUser)}catch(e){console.error(e);notice($('verifyNotice'),firebaseMessage(e),'error')}});
-onAuthStateChanged(auth,async user=>{await persistenceReady.catch(()=>{});currentUser=user;if(!user){cleanup();myProfile=null;contacts={};clearActive();setView('auth');switchAuth('login');return}try{await refreshUser(false);if(!currentUser.emailVerified){$('verifyAddress').textContent=currentUser.email||'';setView('verify');return}await initializeChat(currentUser)}catch(e){console.error('AUTH INIT',e);cleanup();setView('auth');switchAuth('login');notice($('authNotice'),e?.message||firebaseMessage(e),'error')}});
+$('resendVerification').addEventListener('click',sendVerification);$('verifyLogout').addEventListener('click',logout);$('checkVerification').addEventListener('click',async()=>{
+  try{
+    await refreshUser(false);
+    if(!currentUser.emailVerified){
+      notice($('verifyNotice'),'Belum terverifikasi. Buka email dan klik tautannya.','error');
+      return;
+    }
+    await enterChat(currentUser);
+  }catch(e){
+    console.error(e);
+    notice($('verifyNotice'),firebaseMessage(e),'error');
+  }
+});
+onAuthStateChanged(auth,async user=>{
+  await persistenceReady.catch(()=>{});
+  currentUser=user;
+  if(!user){
+    cleanup();
+    myProfile=null;
+    contacts={};
+    clearActive();
+    setView('auth');
+    switchAuth('login');
+    return;
+  }
+  try{
+    if(!user.emailVerified){
+      $('verifyAddress').textContent=user.email||'';
+      setView('verify');
+      return;
+    }
+    await enterChat(user);
+  }catch(e){
+    console.error('AUTH INIT',e);
+    // Only auth-state errors return to the login screen. RTDB errors are intentionally handled in the background.
+    setView('auth');
+    switchAuth('login');
+    notice($('authNotice'),firebaseMessage(e),'error');
+  }
+});
 
-$('accountButton').addEventListener('click',e=>{e.stopPropagation();toggleMenu()});$('accountMenu').addEventListener('click',e=>e.stopPropagation());document.addEventListener('click',closeMenu);$('menuLogout').addEventListener('click',logout);$('logoutButton')?.addEventListener('click',logout);$('menuTheme').addEventListener('click',()=>{document.body.classList.toggle('light');localStorage.setItem('arinex-theme',document.body.classList.contains('light')?'light':'dark');closeMenu()});
+$('accountButton' ).addEventListener('click',e=>{e.stopPropagation();toggleMenu()});$('accountMenu').addEventListener('click',e=>e.stopPropagation());document.addEventListener('click',closeMenu);$('menuLogout').addEventListener('click',logout);$('logoutButton')?.addEventListener('click',logout);$('menuTheme').addEventListener('click',()=>{document.body.classList.toggle('light');localStorage.setItem('arinex-theme',document.body.classList.contains('light')?'light':'dark');closeMenu()});
 $('newChatButton').addEventListener('click',()=>{$('modalBackdrop').classList.remove('hidden');$('contactEmail').value='';clearNotice($('contactModalNotice'));setTimeout(()=>$('contactEmail').focus(),30)});$('addContactButton').addEventListener('click',()=>$('newChatButton').click());$('emptyAddButton').addEventListener('click',()=>$('newChatButton').click());$('closeContactModal').addEventListener('click',()=>$('modalBackdrop').classList.add('hidden'));$('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))$('modalBackdrop').classList.add('hidden')});
 $('contactForm').addEventListener('submit',async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;b.textContent='Mencari…';try{const r=await addContactByEmail($('contactEmail').value);$('modalBackdrop').classList.add('hidden');toast(`${r.displayName} ditambahkan.`);await openConversation(r.uid)}catch(err){console.error('CONTACT',err);notice($('contactModalNotice'),err?.message||firebaseMessage(err),'error')}finally{b.disabled=false;b.textContent='Cari & tambah'}});$('contactSearch').addEventListener('input',renderContacts);$('messageForm').addEventListener('submit',e=>{e.preventDefault();sendMessage()});$('backToContacts').addEventListener('click',clearActive);$('emojiButton').addEventListener('click',()=>{$('messageInput').value+='🙂';$('messageInput').focus()});$('chatMenuButton').addEventListener('click',()=>toast('Percakapan realtime aktif'));
 document.querySelectorAll('.eye').forEach(btn=>btn.addEventListener('click',()=>{const i=$(btn.dataset.target);i.type=i.type==='password'?'text':'password'}));
