@@ -1,6 +1,6 @@
 {
   "name":"Arinex Chat",
-  "short_name":"Arinex Chat",
+  "short_name":"Secret Message",
   "start_url":"./",
   "scope":"./",
   "display":"standalone",
