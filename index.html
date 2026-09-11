@@ -2,7 +2,6 @@
 <html lang="id">
 <head>
   <meta charset="utf-8">
-  <!-- KUNCI ZOOM: maximum-scale=1, user-scalable=no -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#111b21">
   <meta name="description" content="Arinex Chat — realtime messaging sederhana dan aman.">
@@ -95,18 +94,18 @@
       <header class="wa-header">
         <div class="me-profile">
           <img id="myAvatar" src="img/logo_user.png" alt="Profile">
-          <!-- ELEMEN TERSEMBUNYI AGAR JAVASCRIPT TIDAK ERROR -->
-          <span id="myName" class="hidden"></span>
-          <span id="myEmail" class="hidden"></span>
+          <!-- DIKEMBALIKAN: Nama Anda akan muncul di header ini -->
+          <div class="my-meta">
+            <strong id="myName">Memuat...</strong>
+            <span id="myEmail" class="hidden"></span>
+          </div>
         </div>
         <div class="header-actions">
           <button id="installButton" class="action-icon hidden" type="button" title="Install">⇩</button>
-          <!-- TOMBOL TAMBAH PESAN/CHAT BARU -->
-          <button id="newChatButton" class="action-icon" type="button" title="Chat baru">
+          <button id="newChatButton" class="action-icon bubble-btn" type="button" title="Chat baru">
             <img src="img/logo_tambah.png" alt="Chat Baru">
           </button>
-          <!-- TOMBOL MENU DI KANAN -->
-          <button id="accountButton" class="action-icon" type="button" title="Menu">
+          <button id="accountButton" class="action-icon bubble-btn" type="button" title="Menu">
             <img id="accountAvatar" src="img/logo_menu.png" alt="Menu">
           </button>
         </div>
@@ -124,10 +123,10 @@
       <div id="emptyContacts" class="empty-state">
         <div class="empty-symbol">💬</div>
         <strong>Belum ada chat</strong>
-        <span>Klik ikon tambah di atas untuk memulai percakapan.</span>
+        <span>Klik ikon tambah di atas untuk memulai.</span>
       </div>
       
-      <!-- Tombol Tersembunyi (Agar app.js lama tidak error jika mencari ID ini) -->
+      <!-- Fallback button -->
       <button id="addContactButton" class="hidden" type="button"></button>
       <button id="emptyAddButton" class="hidden" type="button"></button>
     </aside>
@@ -157,11 +156,12 @@
 
         <div id="messageList" class="message-list"></div>
 
+        <!-- FORM KETIK PESAN (SUDAH DI FIX TAMPILANNYA) -->
         <form id="messageForm" class="composer">
           <button id="emojiButton" class="action-icon" type="button">😊</button>
           <input id="messageInput" maxlength="4000" autocomplete="off" placeholder="Ketik pesan">
-          <button id="sendButton" class="send-btn" type="submit" title="Kirim">
-            ➤
+          <button id="sendButton" class="send-btn bubble-btn" type="submit" title="Kirim">
+            <img src="img/logo_tambah.png" alt="Kirim">
           </button>
         </form>
       </div>
