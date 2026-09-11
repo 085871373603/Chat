@@ -21,15 +21,15 @@
       <div class="auth-glow glow-a"></div><div class="auth-glow glow-b"></div>
       <div class="auth-card glass-card">
         <div class="brand-row">
-          <div class="brand-mark"><img src="img/chat_logo.png" alt="Arinex Chat"></div>
-          <div><p class="eyebrow">ARINEX DIGITAL</p><h1>Arinex Chat</h1><p class="tagline">Simple. Realtime. Private.</p></div>
+          <div class="brand-mark"><img src="img/chat_icon.png" alt="Arinex Chat"></div>
+          <div><p class="eyebrow">SYNC.ro</p><h1>A secret message</h1></h1><p class="tagline">Simple. Realtime. Private.</p></div>
         </div>
         <div class="status-pill"><span class="status-dot"></span><span>Protected connection</span></div>
 
         <div id="authNotice" class="notice hidden" role="alert"></div>
 
         <div id="loginPanel" class="auth-panel">
-          <h2>Selamat datang kembali</h2>
+          <h2>Selamat datang</h2>
           <p class="muted">Masuk dengan email yang telah diverifikasi.</p>
           <form id="loginForm" autocomplete="on" novalidate>
             <label>Email<input id="loginEmail" type="email" autocomplete="username" maxlength="254" required inputmode="email"></label>
@@ -57,18 +57,18 @@
           <form id="resetForm" autocomplete="on" novalidate><label>Email<input id="resetEmail" type="email" autocomplete="email" maxlength="254" required inputmode="email"></label><button class="primary wide" type="submit">Kirim tautan reset <span>→</span></button></form>
           <button id="backToLogin" class="link-button" type="button">← Kembali ke masuk</button>
         </div>
-        <div class="security-strip"><span>✓</span> Firebase Authentication · Realtime Database Rules · PWA</div>
+        <div class="security-strip"><span>🔵</span> app by @arinex2026 Authentication · Realtime Rules · PWA</div>
       </div>
     </section>
 
     <section id="verifyView" class="verify-view hidden" aria-live="polite">
       <div class="verify-card glass-card">
         <div class="verify-orbit"><div class="verify-icon">✉</div></div>
-        <p class="eyebrow">LANGKAH KEAMANAN</p><h1>Verifikasi email Anda</h1><p id="verifyAddress" class="verified-address">—</p>
+        <p class="eyebrow">SCURITY RULE</p><h1>Registrasi email</h1><p id="verifyAddress" class="verified-address">—</p>
         <p class="verify-copy">Akun Anda sudah dibuat. Buka email verifikasi dari Firebase, lalu kembali ke sini untuk memeriksa statusnya.</p>
         <div id="verifyNotice" class="notice hidden" role="alert"></div>
         <div class="verify-actions"><button id="checkVerification" class="primary wide" type="button">✓ Saya sudah verifikasi</button><button id="resendVerification" class="secondary wide" type="button">Kirim ulang email</button><button id="verifyLogout" class="ghost wide" type="button">Keluar</button></div>
-        <p class="tiny muted">Periksa Inbox, Spam, Promosi, atau Updates.</p>
+        <p class="tiny muted">Periksa email anda (Inbox, Spam, Promosi, atau Updates).</p>
       </div>
     </section>
 
@@ -81,12 +81,12 @@
         <div class="profile-banner"><div class="profile-chip"><span class="chip-dot"></span>Email terverifikasi</div><span class="brand-mini">ARINEX CHAT</span></div>
         <div class="sidebar-tools"><div class="search-wrap"><span>⌕</span><input id="contactSearch" type="search" placeholder="Cari kontak" autocomplete="off" maxlength="254"></div><button id="addContactButton" class="new-contact-btn" type="button">＋</button></div>
         <div id="contactList" class="contact-list"></div>
-        <div id="emptyContacts" class="empty-state"><div class="empty-icon">◎</div><strong>Belum ada kontak</strong><p>Tambahkan kontak menggunakan email terverifikasi.</p></div>
+        <div id="emptyContacts" class="empty-state"><div class="empty-icon">◎</div><strong>Belum ada kontak</strong><p>Tambahkan kontak menggunakan email.</p></div>
       </aside>
 
       <main class="conversation" aria-label="Percakapan">
         <div id="welcomeConversation" class="conversation-welcome">
-          <div class="welcome-glow"></div><img src="img/chat_logo.png" alt="" class="welcome-logo"><p class="eyebrow">ARINEX CHAT</p><h2>Pesan yang terasa dekat.</h2><p>Realtime conversation dengan desain ringan untuk perangkat mobile.</p><div class="welcome-badges"><span>Realtime</span><span>Verified</span><span>PWA</span></div>
+          <div class="welcome-glow"></div><img src="img/chat_logo.png" alt="" class="welcome-logo"><p class="eyebrow">Syncro</p><h2>Pesan yang terasa dekat.</h2><p>Realtime conversation dengan desain ringan untuk perangkat mobile.</p><div class="welcome-badges"><span>Realtime</span><span>Verified</span><span>PWA</span></div>
         </div>
         <div id="activeConversation" class="active-conversation hidden">
           <header class="topbar conversation-topbar"><button id="backToContacts" class="back-btn" type="button" aria-label="Kembali">‹</button><img id="peerAvatar" class="avatar" src="img/chat_logo.png" alt=""><div class="peer-copy"><strong id="peerName">—</strong><span id="peerStatus">Email terverifikasi</span></div><button id="chatMenuButton" class="round-btn" type="button" aria-label="Info chat">⋯</button></header>
