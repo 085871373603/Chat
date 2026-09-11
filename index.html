@@ -46,7 +46,7 @@
         <p class="center">Sudah punya akun? <button id="showLogin" class="text-btn strong" type="button">Masuk</button></p>
       </div>
       <div id="resetPanel" class="auth-panel hidden">
-        <h1>Reset password</h1><p class="sub">Kami akan mengirim tautan reset ke email Anda.</p>
+        <h1>Reset password</h1><p class="sub">Kami akan mengirim tautan reset ke email Anda,Silahkan cek email Inbox/spam.</p>
         <form id="resetForm" novalidate><label>Email<input id="resetEmail" type="email" maxlength="254" autocomplete="email" required></label><button class="primary full" type="submit">Kirim tautan</button></form>
         <button id="backToLogin" class="text-btn" type="button">← Kembali</button>
       </div>
@@ -57,7 +57,7 @@
   <section id="verifyView" class="screen hidden verify-screen">
     <div class="verify-card">
       <div class="verify-icon">✉</div><span class="kicker">VERIFIKASI EMAIL</span><h1>Periksa email Anda</h1>
-      <p id="verifyAddress" class="email-pill">—</p><p class="sub">Buka tautan verifikasi dari Firebase, lalu kembali ke aplikasi.</p>
+      <p id="verifyAddress" class="email-pill">—</p><p class="sub">Email Verifikasi sudah di kirim- silahkan cek inbox/spam.</p>
       <div id="verifyNotice" class="notice hidden"></div>
       <div class="stack"><button id="checkVerification" class="primary full" type="button">Saya sudah verifikasi</button><button id="resendVerification" class="secondary full" type="button">Kirim ulang email</button><button id="verifyLogout" class="text-btn" type="button">Keluar</button></div>
     </div>
@@ -66,11 +66,11 @@
   <section id="chatView" class="chat-shell hidden">
     <aside id="sidebar" class="sidebar">
       <header class="side-header">
-        <div class="brand-mini"><img src="img/chat_logo.png" alt=""><div><strong>Arinex Chat</strong><span>Pesan</span></div></div>
+        <div class="brand-mini"><img src="img/logo_icon.png" alt=""><div><strong>A secret message</strong><span>private</span></div></div>
         <div class="header-actions">
           <button id="installButton" class="icon-btn hidden" type="button" title="Install">⇩</button>
-          <button id="newChatButton" class="icon-btn" type="button" title="Chat baru">✎</button>
-          <button id="accountButton" class="icon-btn profile-btn" type="button" title="Akun"><img id="accountAvatar" src="img/chat_logo.png" alt=""></button>
+          <button id="newChatButton" class="icon-btn" type="button" title="Chat baru"><img src="img/logo_tambah.png" alt=""></button>
+          <button id="accountButton" class="icon-btn profile-btn" type="button" title="Akun"><img id="accountAvatar" src="img/logo_menu.png" alt=""></button>
         </div>
       </header>
       <div class="me-strip"><img id="myAvatar" src="img/logo_user.png" alt=""><div><strong id="myName">Pengguna</strong><span id="myEmail">—</span></div></div>
