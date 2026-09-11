@@ -4,7 +4,7 @@ const urlsToCache = [
   './index.html',
   './css/style.css',
   './js/app.js',
-  './img/chat_logo.png',
+  './img/logo_chat.png',
   './manifest.webmanifest'
 ];
 
