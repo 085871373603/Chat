@@ -38,12 +38,66 @@ async function withTimeout(promise, ms=15000){
 }
 
 async function createVerifiedProfile(user){if(!user.emailVerified)throw new Error('Email belum terverifikasi.');const email=normalizeEmail(user.email);const hash=await sha256Hex(email);const now=Date.now();const name=safeText(user.displayName,40)||email.split('@')[0]||'Pengguna';const profile={displayName:name,createdAt:now,updatedAt:now};await update(ref(db),{[`users/${user.uid}`]:profile,[`publicProfiles/${user.uid}`]:{displayName:name,updatedAt:now},[`emailIndex/${hash}`]:user.uid});myProfile=profile;return profile}
-async function ensureProfile(user){const snap=await get(ref(db,`users/${user.uid}`));if(snap.exists()){myProfile=snap.val();$('myName').textContent=myProfile.displayName||'Pengguna';$('myEmail').textContent=user.email||'';return}await createVerifiedProfile(user);renderMe()}
-function renderMe(){$('myName').textContent=myProfile?.displayName||currentUser?.displayName||'Pengguna';$('myEmail').textContent=currentUser?.email||''}
+async function ensureProfile(user){
+  if(!user?.emailVerified) throw new Error('Email belum terverifikasi.');
+  const email=normalizeEmail(user.email);
+  if(!email) throw new Error('Email akun tidak tersedia.');
+  const hash=await sha256Hex(email);
+  const userRef=ref(db,`users/${user.uid}`);
+  const publicRef=ref(db,`publicProfiles/${user.uid}`);
+  const indexRef=ref(db,`emailIndex/${hash}`);
+  const [userSnap,publicSnap,indexSnap]=await Promise.all([get(userRef),get(publicRef),get(indexRef)]);
+  const existing=userSnap.exists()?userSnap.val():{};
+  const name=safeText(user.displayName,40)||safeText(existing.displayName,40)||email.split('@')[0]||'Pengguna';
+  const now=Date.now();
+  const updates={};
+  if(!userSnap.exists()){
+    updates[`users/${user.uid}`]={displayName:name,createdAt:now,updatedAt:now};
+  }else if(existing.displayName!==name){
+    updates[`users/${user.uid}/displayName`]=name;
+    updates[`users/${user.uid}/updatedAt`]=now;
+  }
+  const publicName=publicSnap.exists()?publicSnap.val().displayName:'';
+  if(!publicSnap.exists() || publicName!==name){
+    updates[`publicProfiles/${user.uid}`]={displayName:name,updatedAt:now};
+  }
+  if(!indexSnap.exists()) updates[`emailIndex/${hash}`]=user.uid;
+  if(Object.keys(updates).length) await withTimeout(update(ref(db),updates),15000);
+  myProfile={...(userSnap.exists()?existing:{}),displayName:name,updatedAt:now};
+  if(!myProfile.createdAt) myProfile.createdAt=now;
+  renderMe();
+}
+function renderMe(){
+  const name=myProfile?.displayName||currentUser?.displayName||currentUser?.email?.split('@')[0]||'Pengguna';
+  const email=currentUser?.email||'';
+  ['myName','menuName'].forEach(id=>{if($(id))$(id).textContent=name});
+  ['myEmail','menuEmail'].forEach(id=>{if($(id))$(id).textContent=email});
+  return name;
+}
 
-async function sendVerification(){if(!currentUser)return;const now=Date.now();if(now<verifyCooldownUntil){showNotice($('verifyNotice'),`Tunggu ${Math.ceil((verifyCooldownUntil-now)/1000)} detik sebelum mengirim ulang.`);return}try{await sendEmailVerification(currentUser,actionCodeSettings());verifyCooldownUntil=Date.now()+60000;showNotice($('verifyNotice'),'Email verifikasi sudah dikirim. Periksa Inbox, Spam, Promosi, atau Updates.')}catch(e){console.error('VERIFICATION ERROR',e);showNotice($('verifyNotice'),firebaseErrorMessage(e),'error')}}
+async 
+function closeAccountMenu(){const m=$('accountMenu');if(!m)return;m.classList.add('hidden');m.setAttribute('aria-hidden','true')}
+function toggleAccountMenu(){const m=$('accountMenu');if(!m)return;const hidden=m.classList.toggle('hidden');m.setAttribute('aria-hidden',String(hidden));renderMe()}
 
-async function addContactByEmail(email){const normalized=normalizeEmail(email);if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))throw new Error('Masukkan email yang valid.');if(normalized===normalizeEmail(currentUser.email))throw new Error('Anda tidak dapat menambahkan diri sendiri.');const hash=await sha256Hex(normalized);const index=await get(ref(db,`emailIndex/${hash}`));if(!index.exists())throw new Error('Kontak tidak ditemukan atau belum terverifikasi.');const uid=index.val();if(!uid||uid===currentUser.uid)throw new Error('Kontak tidak valid.');const profile=await get(ref(db,`publicProfiles/${uid}`));if(!profile.exists())throw new Error('Profil kontak belum tersedia.');const data={displayName:safeText(profile.val()?.displayName,40)||'Pengguna',emailHint:normalized,addedAt:Date.now()};await set(ref(db,`contacts/${currentUser.uid}/${uid}`),data);await ensureChat(uid);return{uid,...data}}
+function sendVerification(){if(!currentUser)return;const now=Date.now();if(now<verifyCooldownUntil){showNotice($('verifyNotice'),`Tunggu ${Math.ceil((verifyCooldownUntil-now)/1000)} detik sebelum mengirim ulang.`);return}try{await sendEmailVerification(currentUser,actionCodeSettings());verifyCooldownUntil=Date.now()+60000;showNotice($('verifyNotice'),'Email verifikasi sudah dikirim. Periksa Inbox, Spam, Promosi, atau Updates.')}catch(e){console.error('VERIFICATION ERROR',e);showNotice($('verifyNotice'),firebaseErrorMessage(e),'error')}}
+
+async function addContactByEmail(email){
+  await refreshCurrentUser(true);
+  const normalized=normalizeEmail(email);
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) throw new Error('Masukkan email yang valid.');
+  if(normalized===normalizeEmail(currentUser.email)) throw new Error('Anda tidak dapat menambahkan diri sendiri.');
+  const hash=await sha256Hex(normalized);
+  const index=await withTimeout(get(ref(db,`emailIndex/${hash}`)),12000);
+  if(!index.exists()) throw new Error('Kontak tidak ditemukan. Pastikan pengguna sudah mendaftar, memverifikasi email, lalu login minimal sekali.');
+  const uid=String(index.val()||'');
+  if(!uid||uid===currentUser.uid) throw new Error('Kontak tidak valid.');
+  const profile=await withTimeout(get(ref(db,`publicProfiles/${uid}`)),12000);
+  if(!profile.exists()) throw new Error('Profil kontak belum tersedia. Minta pengguna tersebut login kembali.');
+  const data={displayName:safeText(profile.val()?.displayName,40)||'Pengguna',emailHint:normalized,addedAt:Date.now()};
+  await withTimeout(set(ref(db,`contacts/${currentUser.uid}/${uid}`),data),12000);
+  await ensureChat(uid);
+  return{uid,...data};
+}
 
 function renderContacts(){const term=normalizeEmail($('contactSearch').value);const list=$('contactList');list.innerHTML='';const entries=Object.entries(contacts||{}).map(([uid,v])=>({uid,...v})).filter(c=>!term||normalizeEmail(c.emailHint).includes(term)||String(c.displayName||'').toLowerCase().includes(term));$('emptyContacts').classList.toggle('hidden',entries.length>0);for(const c of entries){const btn=document.createElement('button');btn.className=`contact-item ${c.uid===activeUid?'active':''}`;btn.type='button';const img=document.createElement('img');img.className='avatar';img.src='img/chat_logo.png';img.alt='';const copy=document.createElement('div');copy.className='contact-copy';const strong=document.createElement('strong');strong.textContent=c.displayName||'Pengguna';const span=document.createElement('span');span.textContent=c.emailHint||'Kontak';copy.append(strong,span);btn.append(img,copy);btn.addEventListener('click',()=>openConversation(c.uid));list.append(btn)}}
 function listenContacts(){if(contactsUnsub)contactsUnsub();contactsUnsub=onValue(ref(db,`contacts/${currentUser.uid}`),snap=>{contacts=snap.exists()?snap.val():{};renderContacts()})}
@@ -108,6 +162,50 @@ async function handleLogin(e){
 
 async function handleReset(e){e.preventDefault();const email=normalizeEmail($('resetEmail').value);if(!email)return showNotice($('authNotice'),'Email wajib diisi.','error');const button=e.submitter;button.disabled=true;button.textContent='Mengirim…';try{await sendPasswordResetEmail(auth,email,actionCodeSettings());showNotice($('authNotice'),'Jika akun dapat menerima reset password, Firebase akan mengirimkan tautannya.');$('resetForm').reset()}catch(err){console.error(err);showNotice($('authNotice'),firebaseErrorMessage(err),'error')}finally{button.disabled=false;button.textContent='Kirim tautan reset →'}}
 
+setPersistence(auth,browserLocalPersistence).catch(err=>console.warn('Persistence setup:',err));
+
+onAuthStateChanged(auth,async user=>{
+  currentUser=user;
+  if(!user){
+    authInitPromise=null; authInitUid=null;
+    closeRealtime(); myProfile=null; contacts={}; clearActiveChat(); setView('auth'); switchAuthPanel('login'); return;
+  }
+  try{
+    await refreshCurrentUser(false);
+    if(!currentUser.emailVerified){
+      $('verifyAddress').textContent=currentUser.email||'';
+      setView('verify');
+      return;
+    }
+    await initAuthenticatedUser(currentUser);
+  }catch(err){
+    console.error('SESSION INIT ERROR',err);
+    closeRealtime();
+    setView('auth');
+    switchAuthPanel('login');
+    showNotice($('authNotice'),firebaseErrorMessage(err),'error');
+  }
+});
+$('loginForm').addEventListener('submit',handleLogin);$('registerForm').addEventListener('submit',handleRegister);$('resetForm').addEventListener('submit',handleReset);$('showRegister').addEventListener('click',()=>switchAuthPanel('register'));$('showLogin').addEventListener('click',()=>switchAuthPanel('login'));$('showReset').addEventListener('click',()=>switchAuthPanel('reset'));$('backToLogin').addEventListener('click',()=>switchAuthPanel('login'));$('verifyLogout').addEventListener('click',()=>signOut(auth));$('resendVerification').addEventListener('click',sendVerification);
+$('checkVerification').addEventListener('click',async()=>{try{if(!currentUser)return;await refreshCurrentUser(false);if(currentUser.emailVerified){showNotice($('verifyNotice'),'Email terverifikasi. Membuka Arinex Chat…');await initAuthenticatedUser(currentUser)}else showNotice($('verifyNotice'),'Status belum terverifikasi. Buka tautan dari email terlebih dahulu.','error')}catch(e){console.error(e);showNotice($('verifyNotice'),firebaseErrorMessage(e),'error')}});
+async function doLogout(){closeAccountMenu();setPresence(false);closeRealtime();try{await signOut(auth)}catch(e){console.error('LOGOUT ERROR',e);showToast('Gagal keluar. Coba lagi.')}}
+$('logoutButton').addEventListener('click',doLogout);
+$('accountButton').addEventListener('click',(e)=>{e.stopPropagation();toggleAccountMenu()});
+$('menuLogout').addEventListener('click',doLogout);
+$('menuTheme').addEventListener('click',()=>{$('themeButton').click();closeAccountMenu()});
+$('accountMenu').addEventListener('click',e=>e.stopPropagation());
+document.addEventListener('click',closeAccountMenu);
+
+$('addContactButton').addEventListener('click',()=>{$('modalBackdrop').classList.remove('hidden');$('contactEmail').value='';hideNotice($('contactModalNotice'));setTimeout(()=>$('contactEmail').focus(),30)});$('closeContactModal').addEventListener('click',()=>$('modalBackdrop').classList.add('hidden'));$('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))$('modalBackdrop').classList.add('hidden')});$('contactForm').addEventListener('submit',async e=>{e.preventDefault();const btn=e.submitter;btn.disabled=true;btn.textContent='Mencari…';try{const r=await addContactByEmail($('contactEmail').value);$('modalBackdrop').classList.add('hidden');showToast(`${r.displayName} berhasil ditambahkan.`)}catch(err){console.error(err);showNotice($('contactModalNotice'),err?.message||'Kontak gagal ditambahkan.','error')}finally{btn.disabled=false;btn.textContent='Cari & tambahkan →'}});
+$('contactSearch').addEventListener('input',renderContacts);$('messageForm').addEventListener('submit',e=>{e.preventDefault();sendMessage()});$('backToContacts').addEventListener('click',clearActiveChat);$('emojiButton').addEventListener('click',()=>{$('messageInput').value+='🙂';$('messageInput').focus()});$('chatMenuButton').addEventListener('click',()=>showToast('Chat aktif • koneksi realtime'));
+
+document.querySelectorAll('.reveal-btn').forEach(btn=>btn.addEventListener('click',()=>{const input=$(btn.dataset.target);input.type=input.type==='password'?'text':'password';btn.textContent=input.type==='password'?'◉':'◌'}));
+$('themeButton').addEventListener('click',()=>{document.body.classList.toggle('light');localStorage.setItem('arinex-theme',document.body.classList.contains('light')?'light':'dark')});if(localStorage.getItem('arinex-theme')==='light')document.body.classList.add('light');
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;$('installButton').classList.remove('hidden')});$('installButton').addEventListener('click',async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;$('installButton').classList.add('hidden')});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setPresence(true);else setPresence(false)});
+// Best-effort UI restrictions: inputs remain usable. No browser page can reliably prevent screenshots or determined users from copying content.
+document.addEventListener('contextmenu',e=>{if(!e.target.closest('input,textarea'))e.preventDefault()});document.addEventListener('selectstart',e=>{if(!e.target.closest('input,textarea,[contenteditable="true"]'))e.preventDefault()});document.addEventListener('dragstart',e=>e.preventDefault());document.addEventListener('keydown',e=>{const editable=e.target.closest('input,textarea,[contenteditable="true"]');const blocked=(e.ctrlKey||e.metaKey)&&['c','x','a','u','s','p'].includes(e.key.toLowerCase());if(!editable&&blocked){e.preventDefault();e.stopPropagation()}});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(e=>console.warn('SW',e));
 setPersistence(auth,browserLocalPersistence).catch(err=>console.warn('Persistence setup:',err));
 
 onAuthStateChanged(auth,async user=>{
