@@ -145,3 +145,4 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 // Best-effort UI restrictions: inputs remain usable. No browser page can reliably prevent screenshots or determined users from copying content.
 document.addEventListener('contextmenu',e=>{if(!e.target.closest('input,textarea'))e.preventDefault()});document.addEventListener('selectstart',e=>{if(!e.target.closest('input,textarea,[contenteditable="true"]'))e.preventDefault()});document.addEventListener('dragstart',e=>e.preventDefault());document.addEventListener('keydown',e=>{const editable=e.target.closest('input,textarea,[contenteditable="true"]');const blocked=(e.ctrlKey||e.metaKey)&&['c','x','a','u','s','p'].includes(e.key.toLowerCase());if(!editable&&blocked){e.preventDefault();e.stopPropagation()}});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(e=>console.warn('SW',e));
+
