@@ -69,7 +69,12 @@
         <div class="brand-mini"><img src="img/logo_chat.png" alt=""><div><strong>A secret message</strong><span>private</span></div></div>
         <div class="header-actions">
           <button id="installButton" class="icon-btn hidden" type="button" title="Install">⇩</button>
-          <button id="newChatButton" class="icon-btn" type="button" title="Chat baru">📧</button>
+          
+          <!-- TOMBOL CHAT BARU / TAMBAH PESAN BERUBAH MENJADI LOGO GAMBAR -->
+          <button id="newChatButton" class="icon-btn bubble-btn" type="button" title="Chat baru">
+             <img src="img/logo_tambah.png" alt="Chat Baru">
+          </button>
+          
           <button id="accountButton" class="icon-btn profile-btn" type="button" title="Akun"><img id="accountAvatar" src="img/logo_menu.png" alt=""></button>
         </div>
       </header>
@@ -92,7 +97,16 @@
           <div class="conversation-actions"><button id="chatMenuButton" class="icon-btn" type="button" title="Info chat">⋯</button></div>
         </header>
         <div id="messageList" class="message-list"></div>
-        <form id="messageForm" class="composer"><button id="emojiButton" class="composer-icon" type="button">☺</button><input id="messageInput" maxlength="4000" autocomplete="off" placeholder="Ketik pesan"><button id="sendButton" class="send-btn" type="submit">➤</button></form>
+        <form id="messageForm" class="composer">
+          <button id="emojiButton" class="composer-icon" type="button">☺</button>
+          <input id="messageInput" maxlength="4000" autocomplete="off" placeholder="Ketik pesan">
+          
+          <!-- TOMBOL KIRIM PESAN JUGA DIUBAH MENJADI LOGO GAMBAR -->
+          <button id="sendButton" class="send-btn bubble-btn" type="submit" title="Kirim">
+             <img src="img/logo_tambah.png" alt="Kirim">
+          </button>
+          
+        </form>
       </div>
     </main>
 
