@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b141a">
+  <meta name="description" content="Arinex Chat — realtime messaging sederhana dan aman.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://www.gstatic.com; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://*.googleapis.com wss://*.firebaseio.com wss://*.firebasedatabase.app; manifest-src 'self'; worker-src 'self'; font-src 'self';">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="img/chat_logo.png" type="image/png">
+  <link rel="apple-touch-icon" href="img/chat_logo.png">
+  <link rel="stylesheet" href="css/style.css">
+  <title>Arinex Chat</title>
+</head>
+<body>
+<div id="app">
+  <section id="authView" class="screen auth-screen">
+    <div class="auth-brand">
+      <img src="img/chat_logo.png" alt="Arinex Chat">
+      <div><strong>Arinex Chat</strong><span>Simple messaging, made private.</span></div>
+    </div>
+    <div class="auth-card">
+      <div id="authNotice" class="notice hidden"></div>
+      <div id="loginPanel" class="auth-panel">
+        <h1>Masuk</h1><p class="sub">Gunakan email yang sudah diverifikasi.</p>
+        <form id="loginForm" novalidate>
+          <label>Email<input id="loginEmail" type="email" autocomplete="username" maxlength="254" required></label>
+          <label>Password<div class="password-wrap"><input id="loginPassword" type="password" autocomplete="current-password" maxlength="72" required><button type="button" class="eye" data-target="loginPassword">◉</button></div></label>
+          <button class="primary full" type="submit">Masuk</button>
+        </form>
+        <div class="auth-links"><button id="showReset" class="text-btn" type="button">Lupa password?</button><button id="showRegister" class="text-btn strong" type="button">Buat akun</button></div>
+      </div>
+      <div id="registerPanel" class="auth-panel hidden">
+        <h1>Buat akun</h1><p class="sub">Email harus diverifikasi sebelum chat digunakan.</p>
+        <form id="registerForm" novalidate>
+          <label>Nama pengguna<input id="registerName" type="text" maxlength="40" autocomplete="name" required></label>
+          <label>Email<input id="registerEmail" type="email" maxlength="254" autocomplete="email" required></label>
+          <label>Password<div class="password-wrap"><input id="registerPassword" type="password" maxlength="72" autocomplete="new-password" required><button type="button" class="eye" data-target="registerPassword">◉</button></div></label>
+          <div class="hint">Min. 8 karakter • huruf besar • huruf kecil • angka • simbol</div>
+          <label>Konfirmasi password<input id="registerPassword2" type="password" maxlength="72" autocomplete="new-password" required></label>
+          <button class="primary full" type="submit">Daftar</button>
+        </form>
+        <p class="center">Sudah punya akun? <button id="showLogin" class="text-btn strong" type="button">Masuk</button></p>
+      </div>
+      <div id="resetPanel" class="auth-panel hidden">
+        <h1>Reset password</h1><p class="sub">Kami akan mengirim tautan reset ke email Anda.</p>
+        <form id="resetForm" novalidate><label>Email<input id="resetEmail" type="email" maxlength="254" autocomplete="email" required></label><button class="primary full" type="submit">Kirim tautan</button></form>
+        <button id="backToLogin" class="text-btn" type="button">← Kembali</button>
+      </div>
+      <div class="auth-foot">Firebase Authentication · Realtime Database · PWA</div>
+    </div>
+  </section>
+
+  <section id="verifyView" class="screen hidden verify-screen">
+    <div class="verify-card">
+      <div class="verify-icon">✉</div><span class="kicker">VERIFIKASI EMAIL</span><h1>Periksa email Anda</h1>
+      <p id="verifyAddress" class="email-pill">—</p><p class="sub">Buka tautan verifikasi dari Firebase, lalu kembali ke aplikasi.</p>
+      <div id="verifyNotice" class="notice hidden"></div>
+      <div class="stack"><button id="checkVerification" class="primary full" type="button">Saya sudah verifikasi</button><button id="resendVerification" class="secondary full" type="button">Kirim ulang email</button><button id="verifyLogout" class="text-btn" type="button">Keluar</button></div>
+    </div>
+  </section>
+
+  <section id="chatView" class="chat-shell hidden">
+    <aside id="sidebar" class="sidebar">
+      <header class="side-header">
+        <div class="brand-mini"><img src="img/chat_logo.png" alt=""><div><strong>Arinex Chat</strong><span>Pesan</span></div></div>
+        <div class="header-actions">
+          <button id="installButton" class="icon-btn hidden" type="button" title="Install">⇩</button>
+          <button id="newChatButton" class="icon-btn" type="button" title="Chat baru">✎</button>
+          <button id="accountButton" class="icon-btn profile-btn" type="button" title="Akun"><img id="accountAvatar" src="img/chat_logo.png" alt=""></button>
+        </div>
+      </header>
+      <div class="me-strip"><img id="myAvatar" src="img/chat_logo.png" alt=""><div><strong id="myName">Pengguna</strong><span id="myEmail">—</span></div></div>
+      <div class="search-box"><span>⌕</span><input id="contactSearch" type="search" placeholder="Cari chat atau kontak" autocomplete="off" maxlength="254"></div>
+      <div class="section-label"><span>CHAT</span><button id="addContactButton" class="tiny-btn" type="button">+ Tambah kontak</button></div>
+      <div id="contactList" class="contact-list"></div>
+      <div id="emptyContacts" class="empty-state"><div class="empty-symbol">◌</div><strong>Belum ada chat</strong><span>Tambahkan kontak dengan email untuk memulai percakapan.</span><button id="emptyAddButton" class="primary" type="button">Tambah kontak</button></div>
+    </aside>
+
+    <main class="conversation">
+      <div id="welcomeConversation" class="welcome-pane">
+        <img src="img/chat_logo.png" alt="" class="welcome-logo"><h2>Arinex Chat</h2><p>Mulai percakapan dari daftar chat di sebelah kiri.</p>
+      </div>
+      <div id="activeConversation" class="active-conversation hidden">
+        <header class="conversation-header">
+          <button id="backToContacts" class="mobile-back icon-btn" type="button">‹</button>
+          <img id="peerAvatar" src="img/chat_logo.png" alt="">
+          <div class="peer-meta"><strong id="peerName">—</strong><span id="peerStatus">Email terverifikasi</span></div>
+          <div class="conversation-actions"><button id="chatMenuButton" class="icon-btn" type="button" title="Info chat">⋯</button></div>
+        </header>
+        <div id="messageList" class="message-list"></div>
+        <form id="messageForm" class="composer"><button id="emojiButton" class="composer-icon" type="button">☺</button><input id="messageInput" maxlength="4000" autocomplete="off" placeholder="Ketik pesan"><button id="sendButton" class="send-btn" type="submit">➤</button></form>
+      </div>
+    </main>
+
+    <div id="accountMenu" class="popover hidden" aria-hidden="true">
+      <div class="popover-user"><img id="menuAvatar" src="img/chat_logo.png" alt=""><div><strong id="menuName">Pengguna</strong><span id="menuEmail">—</span></div></div>
+      <button id="menuTheme" type="button">☼ <span>Mode tampilan</span></button>
+      <button id="menuInstall" type="button" class="install-menu hidden">⇩ <span>Install aplikasi</span></button>
+      <button id="menuLogout" type="button" class="danger">↪ <span>Keluar</span></button>
+    </div>
+  </section>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden">
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="contactTitle">
+      <header class="modal-head"><div><span class="kicker">KONTAK BARU</span><h2 id="contactTitle">Mulai chat</h2></div><button id="closeContactModal" class="icon-btn" type="button">×</button></header>
+      <p class="sub">Masukkan email akun Arinex Chat.</p>
+      <form id="contactForm"><label>Email<input id="contactEmail" type="email" maxlength="254" autocomplete="off" required></label><button class="primary full" type="submit">Cari & tambah</button></form>
+      <div id="contactModalNotice" class="notice hidden"></div>
+    </section>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

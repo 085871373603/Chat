@@ -1,0 +1,62 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.token.email_verified === true && auth.uid === $uid",
+        ".write": "auth != null && auth.token.email_verified === true && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['displayName','createdAt','updatedAt']) && newData.child('displayName').isString() && newData.child('displayName').val().length >= 1 && newData.child('displayName').val().length <= 40 && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber()"
+      }
+    },
+    "publicProfiles": {
+      "$uid": {
+        ".read": "auth != null && auth.token.email_verified === true",
+        ".write": "auth != null && auth.token.email_verified === true && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['displayName','updatedAt']) && newData.child('displayName').isString() && newData.child('displayName').val().length >= 1 && newData.child('displayName').val().length <= 40 && newData.child('updatedAt').isNumber()"
+      }
+    },
+    "emailIndex": {
+      "$hash": {
+        ".read": "auth != null && auth.token.email_verified === true",
+        ".write": "auth != null && auth.token.email_verified === true && !data.exists() && newData.val() === auth.uid",
+        ".validate": "$hash.matches(/^[a-f0-9]{64}$/) && newData.isString() && newData.val() === auth.uid"
+      }
+    },
+    "contacts": {
+      "$uid": {
+        ".read": "auth != null && auth.token.email_verified === true && auth.uid === $uid",
+        "$peerUid": {
+          ".write": "auth != null && auth.token.email_verified === true && auth.uid === $uid && newData.exists()",
+          ".validate": "newData.hasChildren(['displayName','email','addedAt']) && newData.child('displayName').isString() && newData.child('displayName').val().length >= 1 && newData.child('displayName').val().length <= 40 && newData.child('email').isString() && newData.child('email').val().length >= 3 && newData.child('email').val().length <= 254 && newData.child('addedAt').isNumber()"
+        }
+      }
+    },
+    "chats": {
+      "$chatId": {
+        ".read": "auth != null && auth.token.email_verified === true && data.child('participants').child(auth.uid).val() === true",
+        ".write": "auth != null && auth.token.email_verified === true && ((!data.exists() && newData.child('participants').child(auth.uid).val() === true && newData.child('participants').numChildren() === 2 && newData.child('type').val() === 'direct' && newData.child('createdAt').isNumber()) || (data.exists() && data.child('participants').child(auth.uid).val() === true))",
+        ".validate": "newData.child('type').val() === 'direct' && newData.child('participants').hasChildren() && newData.child('participants').numChildren() === 2",
+        "participants": {
+          "$memberUid": { ".validate": "newData.isBoolean() && newData.val() === true" }
+        },
+        "type": { ".validate": "newData.isString() && newData.val() === 'direct'" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "messages": {
+          "$messageId": {
+            ".read": "auth != null && auth.token.email_verified === true && root.child('chats').child($chatId).child('participants').child(auth.uid).val() === true",
+            ".write": "auth != null && auth.token.email_verified === true && root.child('chats').child($chatId).child('participants').child(auth.uid).val() === true && !data.exists() && newData.child('senderId').val() === auth.uid",
+            ".validate": "newData.hasChildren(['senderId','text','createdAt']) && newData.child('senderId').isString() && newData.child('senderId').val() === auth.uid && newData.child('text').isString() && newData.child('text').val().length >= 1 && newData.child('text').val().length <= 4000 && newData.child('createdAt').isNumber()"
+          }
+        }
+      }
+    },
+    "presence": {
+      "$uid": {
+        ".read": "auth != null && auth.token.email_verified === true",
+        ".write": "auth != null && auth.token.email_verified === true && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['online','lastSeen']) && newData.child('online').isBoolean() && newData.child('lastSeen').isNumber()"
+      }
+    }
+  }
+}
