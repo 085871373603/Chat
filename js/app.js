@@ -127,10 +127,14 @@ async function ensureProfile(user) {
     const now = Date.now();
     const updates = {};
     
-    if (!us.exists()) updates[`users/${user.uid}`] = { displayName: name, createdAt: now, updatedAt: now };
-    else if (old.displayName !== name) updates[`users/${user.uid}/displayName`] = name;
+    // LOGIKA YANG DIPERBAIKI (Mencegah tumpang tindih update/ancestor path)
+    if (!us.exists()) {
+        updates[`users/${user.uid}`] = { displayName: name, createdAt: now, updatedAt: now };
+    } else {
+        if (old.displayName !== name) updates[`users/${user.uid}/displayName`] = name;
+        updates[`users/${user.uid}/updatedAt`] = now;
+    }
     
-    updates[`users/${user.uid}/updatedAt`] = now;
     if (!ps.exists() || ps.val()?.displayName !== name) updates[`publicProfiles/${user.uid}`] = { displayName: name, updatedAt: now };
     if (!is.exists()) updates[`emailIndex/${hash}`] = user.uid;
     
@@ -482,3 +486,4 @@ if ('serviceWorker' in navigator) {
         for (let reg of registrations) { reg.unregister(); }
     });
 }
+
