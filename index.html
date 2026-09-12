@@ -13,7 +13,7 @@
   <link rel="icon" href="img/chat_icon.png" type="image/png">
   <link rel="apple-touch-icon" href="img/chat_icon.png">
   <link rel="stylesheet" href="css/style.css">
-  <title>Arinex Chat</title>
+  <title>Web Message</title>
 </head>
 <body>
 <div id="app">
@@ -21,7 +21,7 @@
   <section id="authView" class="screen auth-screen">
     <div class="auth-brand">
       <img src="img/chat_icon.png" alt="Arinex Chat">
-      <div><strong>Arinex Chat</strong><span>Simple messaging, private.</span></div>
+      <div><strong>The Secret Message</strong><span>Simple messaging, private.</span></div>
     </div>
     <div class="auth-card">
       <div id="authNotice" class="notice hidden"></div>
@@ -43,13 +43,13 @@
       </div>
 
       <div id="registerPanel" class="auth-panel hidden">
-        <h1>Buat akun</h1><p class="sub">Registrasi Akun Baru</p>
+        <h1>Buat akun</h1><p class="sub">Registrasi Akun</p>
         <form id="registerForm" novalidate>
           <input id="registerName" type="text" placeholder="Nama pengguna" maxlength="40" autocomplete="name" required>
           <input id="registerEmail" type="email" placeholder="Email" maxlength="254" autocomplete="email" required>
           <div class="password-wrap">
             <input id="registerPassword" type="password" placeholder="Password" maxlength="72" autocomplete="new-password" required>
-            <button type="button" class="eye" data-target="registerPassword">◉</button>
+            <button type="button" class="eye" data-target="registerPassword">👁</button>
           </div>
           <div class="hint">Min. 8 karakter (Besar, Kecil, Angka, Simbol)</div>
           <input id="registerPassword2" type="password" placeholder="Konfirmasi Password" maxlength="72" autocomplete="new-password" required>
@@ -64,7 +64,7 @@
           <input id="resetEmail" type="email" placeholder="Email" maxlength="254" autocomplete="email" required>
           <button class="primary full" type="submit">Kirim tautan</button>
         </form>
-        <button id="backToLogin" class="text-btn" style="margin-top:20px;" type="button">← Kembali Masuk</button>
+        <button id="backToLogin" class="text-btn" style="margin-top:20px;" type="button">🔙Kembali Masuk</button>
       </div>
     </div>
     <div class="auth-foot">app by @arinex 2026 · Realtime · PWA</div>
@@ -73,7 +73,7 @@
   <!-- LAYAR VERIFIKASI -->
   <section id="verifyView" class="screen hidden verify-screen">
     <div class="verify-card">
-      <div class="verify-icon">✉</div>
+      <div class="verify-icon">✉️</div>
       <span class="kicker">VERIFIKASI EMAIL</span>
       <h1>Periksa email Anda</h1>
       <p id="verifyAddress" class="email-pill">—</p>
@@ -122,7 +122,7 @@
       
       <div id="emptyContacts" class="empty-state">
         <div class="empty-symbol">💬</div>
-        <strong>Belum ada chat</strong>
+        <strong>Belum ada Pesan</strong>
         <span>Klik ikon tambah di atas untuk memulai.</span>
       </div>
       
@@ -135,8 +135,8 @@
     <main class="conversation">
       <div id="welcomeConversation" class="welcome-pane">
         <img src="img/chat_logo.png" alt="" class="welcome-logo">
-        <h2>Arinex Chat</h2>
-        <p>Kirim dan terima pesan dengan cepat dan aman.<br>Pilih kontak di sebelah kiri untuk mulai.</p>
+        <h2>The Secret Message</h2>
+        <p>Kirim dan terima pesan dengan aman.<br>Pilih kontak di sebelah kiri untuk mulai.</p>
       </div>
 
       <div id="activeConversation" class="active-conversation hidden">
@@ -161,7 +161,7 @@
           <button id="emojiButton" class="action-icon" type="button">😊</button>
           <input id="messageInput" maxlength="4000" autocomplete="off" placeholder="Ketik pesan">
           <button id="sendButton" class="send-btn bubble-btn" type="submit" title="Kirim">
-            <img src="img/logo_tambah.png" alt="Kirim">
+            <img src="img/send.png" alt="Kirim">
           </button>
         </form>
       </div>
@@ -186,7 +186,7 @@
   <div id="modalBackdrop" class="modal-backdrop hidden">
     <section class="modal-card" role="dialog" aria-modal="true">
       <header class="modal-head">
-        <h2>Chat Baru</h2>
+        <h2>Pesan Baru</h2>
         <button id="closeContactModal" class="action-icon" type="button">×</button>
       </header>
       <p class="sub" style="margin-bottom:15px;">Masukkan email akun tujuan.</p>
