@@ -24,7 +24,7 @@
       <div><strong>The Secret Message</strong><span>Simple messaging, private.</span></div>
     </div>
     <div class="auth-card">
-      <div id="authNotice" class="notice hidden"></div>
+      <div id="authNotice" class="notice hidden">***</div>
       
       <div id="loginPanel" class="auth-panel">
         <h1>Masuk</h1><p class="sub">Gunakan email yang sudah diverifikasi.</p>
@@ -32,7 +32,7 @@
           <input id="loginEmail" type="email" placeholder="Email" autocomplete="username" maxlength="254" required>
           <div class="password-wrap">
             <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" maxlength="72" required>
-            <button type="button" class="eye" data-target="loginPassword">◉</button>
+            <button type="button" class="eye" data-target="loginPassword">👁</button>
           </div>
           <button class="primary full" type="submit">Masuk</button>
         </form>
@@ -53,6 +53,7 @@
           </div>
           <div class="hint">Min. 8 karakter (Besar, Kecil, Angka, Simbol)</div>
           <input id="registerPassword2" type="password" placeholder="Konfirmasi Password" maxlength="72" autocomplete="new-password" required>
+          <button type="button" class="eye" data-target="registerPassword">👁</button>
           <button class="primary full" type="submit">Daftar</button>
         </form>
         <p class="center" style="margin-top:15px;">Sudah punya akun? <button id="showLogin" class="text-btn strong" type="button">Masuk</button></p>
