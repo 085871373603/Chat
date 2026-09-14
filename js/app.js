@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/fireba
 import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signOut, reload, updateProfile } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import { getDatabase, ref, get, set, update, push, onValue, off, onDisconnect, serverTimestamp, goOnline } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
 
-// KONFIGURASI FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyCFsAAGRTW0et7_pQnxhLtkGR174kRqikg",
     authDomain: "arinexservice.firebaseapp.com",
@@ -19,10 +18,9 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 const persistenceReady = setPersistence(auth, browserLocalPersistence);
 
-// VARIABEL & UTILITIES
 const $ = id => document.getElementById(id);
 let currentUser = null, myProfile = null, contacts = {}, activeUid = null, activeChatId = null;
-let contactsUnsub = null, messagesUnsub = null, presenceDisconnect = null, deferredInstallPrompt = null, toastTimer = null, verifyCooldownUntil = 0, authBusy = false;
+let contactsUnsub = null, messagesUnsub = null, presenceDisconnect = null, toastTimer = null, verifyCooldownUntil = 0, authBusy = false;
 
 const views = { auth: $('authView'), verify: $('verifyView'), chat: $('chatView') };
 const normalizeEmail = v => String(v ?? '').trim().toLowerCase();
@@ -41,7 +39,6 @@ function notice(el, msg, type = 'info') {
     el.classList.remove('hidden', 'error');
     if (type === 'error') el.classList.add('error');
 }
-
 function clearNotice(el) { el?.classList.add('hidden'); }
 
 function toast(msg) {
@@ -73,15 +70,9 @@ function switchAuth(panel) {
     clearNotice($('authNotice'));
 }
 
-function actionCodeSettings() {
-    return { url: window.location.origin + window.location.pathname, handleCodeInApp: false };
-}
-
+function actionCodeSettings() { return { url: window.location.origin + window.location.pathname, handleCodeInApp: false }; }
 function chatIdFor(a, b) { return [a, b].sort().join('__'); }
-
-function formatTime(ts) {
-    return new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit' }).format(new Date(Number(ts) || Date.now()));
-}
+function formatTime(ts) { return new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit' }).format(new Date(Number(ts) || Date.now())); }
 
 async function sha256Hex(value) {
     const bytes = new TextEncoder().encode(value);
@@ -104,12 +95,9 @@ async function refreshUser(forceVerified = false) {
     return currentUser;
 }
 
-// SAFETY CHECK: Mencegah error "Cannot set properties" jika HTML diubah
 function renderMe() {
     const name = safeText(myProfile?.displayName, 40) || safeText(currentUser?.displayName, 40) || normalizeEmail(currentUser?.email).split('@')[0] || 'Pengguna';
     const email = currentUser?.email || '';
-    
-    // Perbarui teks hanya jika elemennya ada di HTML
     ['myName', 'menuName'].forEach(id => { if($(id)) $(id).textContent = name; });
     ['myEmail', 'menuEmail'].forEach(id => { if($(id)) $(id).textContent = email; });
     return name;
@@ -127,7 +115,6 @@ async function ensureProfile(user) {
     const now = Date.now();
     const updates = {};
     
-    // LOGIKA YANG DIPERBAIKI (Mencegah tumpang tindih update/ancestor path)
     if (!us.exists()) {
         updates[`users/${user.uid}`] = { displayName: name, createdAt: now, updatedAt: now };
     } else {
@@ -169,7 +156,6 @@ function toggleMenu() {
     renderMe();
 }
 
-// RENDER DAFTAR KONTAK DENGAN GAMBAR PUKI.PNG
 function renderContacts() {
     const term = normalizeEmail($('contactSearch')?.value);
     const list = $('contactList');
@@ -185,7 +171,7 @@ function renderContacts() {
         b.type = 'button';
         
         const img = document.createElement('img');
-        img.src = 'img/puki.png'; // Menyesuaikan permintaan Anda sebelumnya
+        img.src = 'img/puki.png';
         img.alt = '';
         
         const copy = document.createElement('div');
@@ -218,9 +204,8 @@ async function ensureChat(peerUid) {
     return id;
 }
 
-// PENCARIAN KONTAK (Dengan Fix goOnline Database)
 async function addContactByEmail(value) {
-    goOnline(db); // Paksa sambung database agar tidak menggantung
+    goOnline(db);
     await refreshUser(true);
     const email = normalizeEmail(value);
     if (!isEmail(email)) throw new Error('Masukkan email yang valid.');
@@ -346,7 +331,7 @@ async function logout() {
     try { await signOut(auth); } catch (e) { toast('Gagal keluar. Coba lagi.'); }
 }
 
-// EVENT LISTENERS UNTUK FORMS & BUTTONS
+// EVENTS
 $('loginForm')?.addEventListener('submit', async e => {
     e.preventDefault(); if (authBusy) return;
     const email = normalizeEmail($('loginEmail').value), pass = $('loginPassword').value;
@@ -392,7 +377,6 @@ $('resetForm')?.addEventListener('submit', async e => {
     finally { b.disabled = false; b.textContent = 'Kirim tautan'; }
 });
 
-// UI TOGGLES
 $('showRegister')?.addEventListener('click', () => switchAuth('register'));
 $('showLogin')?.addEventListener('click', () => switchAuth('login'));
 $('showReset')?.addEventListener('click', () => switchAuth('reset'));
@@ -421,7 +405,6 @@ onAuthStateChanged(auth, async user => {
     } catch (e) { cleanup(); setView('auth'); switchAuth('login'); notice($('authNotice'), firebaseMessage(e), 'error'); }
 });
 
-// MENU & MODALS INTERACTION
 $('accountButton')?.addEventListener('click', e => { e.stopPropagation(); toggleMenu(); });
 $('accountMenu')?.addEventListener('click', e => e.stopPropagation());
 document.addEventListener('click', closeMenu);
@@ -463,27 +446,6 @@ document.querySelectorAll('.eye').forEach(btn => btn.addEventListener('click', (
     if(i) i.type = i.type === 'password' ? 'text' : 'password';
 }));
 
-// PWA & PRESENCE
-window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault(); deferredInstallPrompt = e;
-    $('installButton')?.classList.remove('hidden'); $('menuInstall')?.classList.remove('hidden');
-});
-async function install() {
-    if (!deferredInstallPrompt) return;
-    deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
-    $('installButton')?.classList.add('hidden'); $('menuInstall')?.classList.add('hidden');
-}
-$('installButton')?.addEventListener('click', install);
-$('menuInstall')?.addEventListener('click', () => { closeMenu(); install(); });
-
+// PRESENCE (Tidak Ada Kode PWA / Service Worker Di Sini)
 document.addEventListener('visibilitychange', () => setPresence(document.visibilityState === 'visible'));
 window.addEventListener('beforeunload', () => setPresence(false));
-
-// CLEANUP LAMA: Hapus service worker yang menyebabkan Error Network Firebase
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (let reg of registrations) { reg.unregister(); }
-    });
-}
-
