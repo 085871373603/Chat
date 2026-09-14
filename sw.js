@@ -1,16 +1,24 @@
-// EVENT INSTALL: Langsung aktifkan tanpa menunggu
+// Memaksa Service Worker baru langsung aktif tanpa menunggu
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// EVENT ACTIVATE: Langsung ambil alih halaman
+// Menghancurkan SEMUA cache lama yang pernah tersimpan di HP
 self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          console.log('Menghapus cache bandel:', cacheName);
+          return caches.delete(cacheName);
+        })
+      );
+    })
+  );
+  self.clients.claim();
 });
 
-// EVENT FETCH: KUNCI UTAMA (BYPASS)
-// Biarkan kosong seperti ini.
-// Artinya: "Jangan cegat apapun, biarkan aplikasi mengambil data langsung dari internet!"
+// Bypass total: Jangan pernah simpan apapun ke cache lagi!
 self.addEventListener('fetch', (event) => {
-  return; 
+  event.respondWith(fetch(event.request));
 });
