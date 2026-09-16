@@ -1,301 +1,446 @@
 <!doctype html>
 <html lang="id">
-
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#ed1c24">
   <link rel="icon" href="img/chat_icon.png" type="image/png">
   <title>Info — Secret Message</title>
 
-  <!-- Terapkan tema sebelum halaman tampil -->
-  <script>
-    (function () {
-      const theme = localStorage.getItem('arinex_theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', theme);
-    })();
-  </script>
-
-  <!-- CSS High Contrast Retro / Industrial -->
   <style>
     :root {
-      --bg-color: #000000;
-      --text-main: #FFFFFF;
-      --accent-primary: #FFFF00; /* Kuning terang */
-      --accent-secondary: #00FFFF; /* Cyan terang */
-      --border-color: #FFFFFF;
-      --font-family: 'Courier New', Courier, monospace;
-    }
+      /* TEMA WARNA BARU */
+      --bg-main: #f0f2f5; 
+      --bg-panel: #ffffff;
+      --bg-header: #ed1c24; /* Merah tegas */
+      --bg-input: #f0f2f5; 
+      --text-main: #111b21; 
+      --text-sub: #667781; 
+      --text-header: #ffffff; 
+      --accent: #00a651; /* Hijau terang */
+      --accent-hover: #008541;
+      --border: #e9edef; 
+      --bubble-in: #ffffff; 
+      --bubble-out: #e6f4ea;
+      --danger: #ef5350;
 
-    /* Opsi jika sistem beralih ke light theme, tetap pakai kontras tinggi */
-    [data-theme="light"] {
-      --bg-color: #FFFFFF;
-      --text-main: #000000;
-      --accent-primary: #0000FF;
-      --accent-secondary: #FF0000;
-      --border-color: #000000;
+      /* LENGKUNGAN PIXELATED DARI CSS-MU */
+      --alias-8: polygon(8px 0, calc(100% - 8px) 0, calc(100% - 6px) 0, calc(100% - 6px) 1px, calc(100% - 4px) 1px, calc(100% - 4px) 2px, calc(100% - 3px) 2px, calc(100% - 3px) 3px, calc(100% - 2px) 3px, calc(100% - 2px) 4px, calc(100% - 1px) 4px, calc(100% - 1px) 6px, 100% 6px, 100% 8px, 100% calc(100% - 8px), 100% calc(100% - 6px), calc(100% - 1px) calc(100% - 6px), calc(100% - 1px) calc(100% - 4px), calc(100% - 2px) calc(100% - 4px), calc(100% - 2px) calc(100% - 3px), calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) calc(100% - 2px), calc(100% - 4px) calc(100% - 2px), calc(100% - 4px) calc(100% - 1px), calc(100% - 6px) calc(100% - 1px), calc(100% - 6px) 100%, calc(100% - 8px) 100%, 8px 100%, 6px 100%, 6px calc(100% - 1px), 4px calc(100% - 1px), 4px calc(100% - 2px), 3px calc(100% - 2px), 3px calc(100% - 3px), 2px calc(100% - 3px), 2px calc(100% - 4px), 1px calc(100% - 4px), 1px calc(100% - 6px), 0 calc(100% - 6px), 0 calc(100% - 8px), 0 8px, 0 6px, 1px 6px, 1px 4px, 2px 4px, 2px 3px, 3px 3px, 3px 2px, 4px 2px, 4px 1px, 6px 1px, 6px 0, 8px 0);
+      --alias-16: polygon(16px 0, calc(100% - 16px) 0, calc(100% - 12px) 0, calc(100% - 12px) 1px, calc(100% - 9px) 1px, calc(100% - 9px) 2px, calc(100% - 7px) 2px, calc(100% - 7px) 3px, calc(100% - 5px) 3px, calc(100% - 5px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 5px, calc(100% - 3px) 5px, calc(100% - 3px) 7px, calc(100% - 2px) 7px, calc(100% - 2px) 9px, calc(100% - 1px) 9px, calc(100% - 1px) 12px, 100% 12px, 100% 16px, 100% calc(100% - 16px), 100% calc(100% - 12px), calc(100% - 1px) calc(100% - 12px), calc(100% - 1px) calc(100% - 9px), calc(100% - 2px) calc(100% - 9px), calc(100% - 2px) calc(100% - 7px), calc(100% - 3px) calc(100% - 7px), calc(100% - 3px) calc(100% - 5px), calc(100% - 4px) calc(100% - 5px), calc(100% - 4px) calc(100% - 4px), calc(100% - 5px) calc(100% - 4px), calc(100% - 5px) calc(100% - 3px), calc(100% - 7px) calc(100% - 3px), calc(100% - 7px) calc(100% - 2px), calc(100% - 9px) calc(100% - 2px), calc(100% - 9px) calc(100% - 1px), calc(100% - 12px) calc(100% - 1px), calc(100% - 12px) 100%, calc(100% - 16px) 100%, 16px 100%, 12px 100%, 12px calc(100% - 1px), 9px calc(100% - 1px), 9px calc(100% - 2px), 7px calc(100% - 2px), 7px calc(100% - 3px), 5px calc(100% - 3px), 5px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 5px), 3px calc(100% - 5px), 3px calc(100% - 7px), 2px calc(100% - 7px), 2px calc(100% - 9px), 1px calc(100% - 9px), 1px calc(100% - 12px), 0 calc(100% - 12px), 0 calc(100% - 16px), 0 16px, 0 12px, 1px 12px, 1px 9px, 2px 9px, 2px 7px, 3px 7px, 3px 5px, 4px 5px, 4px 4px, 5px 4px, 5px 3px, 7px 3px, 7px 2px, 9px 2px, 9px 1px, 12px 1px, 12px 0, 16px 0);
+      --alias-24: polygon(24px 0, calc(100% - 24px) 0, calc(100% - 18px) 0, calc(100% - 18px) 1px, calc(100% - 14px) 1px, calc(100% - 14px) 2px, calc(100% - 11px) 2px, calc(100% - 11px) 3px, calc(100% - 9px) 3px, calc(100% - 9px) 4px, calc(100% - 7px) 4px, calc(100% - 7px) 5px, calc(100% - 6px) 5px, calc(100% - 6px) 6px, calc(100% - 5px) 6px, calc(100% - 5px) 7px, calc(100% - 4px) 7px, calc(100% - 4px) 9px, calc(100% - 3px) 9px, calc(100% - 3px) 11px, calc(100% - 2px) 11px, calc(100% - 2px) 14px, calc(100% - 1px) 14px, calc(100% - 1px) 18px, 100% 18px, 100% 24px, 100% calc(100% - 24px), 100% calc(100% - 18px), calc(100% - 1px) calc(100% - 18px), calc(100% - 1px) calc(100% - 14px), calc(100% - 2px) calc(100% - 14px), calc(100% - 2px) calc(100% - 11px), calc(100% - 3px) calc(100% - 11px), calc(100% - 3px) calc(100% - 9px), calc(100% - 4px) calc(100% - 9px), calc(100% - 4px) calc(100% - 7px), calc(100% - 5px) calc(100% - 7px), calc(100% - 5px) calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) calc(100% - 5px), calc(100% - 7px) calc(100% - 5px), calc(100% - 7px) calc(100% - 4px), calc(100% - 9px) calc(100% - 4px), calc(100% - 9px) calc(100% - 3px), calc(100% - 11px) calc(100% - 3px), calc(100% - 11px) calc(100% - 2px), calc(100% - 14px) calc(100% - 2px), calc(100% - 14px) calc(100% - 1px), calc(100% - 18px) calc(100% - 1px), calc(100% - 18px) 100%, calc(100% - 24px) 100%, 24px 100%, 18px 100%, 18px calc(100% - 1px), 14px calc(100% - 1px), 14px calc(100% - 2px), 11px calc(100% - 2px), 11px calc(100% - 3px), 9px calc(100% - 3px), 9px calc(100% - 4px), 7px calc(100% - 4px), 7px calc(100% - 5px), 6px calc(100% - 5px), 6px calc(100% - 6px), 5px calc(100% - 6px), 5px calc(100% - 7px), 4px calc(100% - 7px), 4px calc(100% - 9px), 3px calc(100% - 9px), 3px calc(100% - 11px), 2px calc(100% - 11px), 2px calc(100% - 14px), 1px calc(100% - 14px), 1px calc(100% - 18px), 0 calc(100% - 18px), 0 calc(100% - 24px), 0 24px, 0 18px, 1px 18px, 1px 14px, 2px 14px, 2px 11px, 3px 11px, 3px 9px, 4px 9px, 4px 7px, 5px 7px, 5px 6px, 6px 6px, 6px 5px, 7px 5px, 7px 4px, 9px 4px, 9px 3px, 11px 3px, 11px 2px, 14px 2px, 14px 1px, 18px 1px, 18px 0, 24px 0);
+      --alias-circle: polygon(50% 0%, 56% 0%, 63% 2%, 69% 4%, 75% 7%, 80% 10%, 85% 15%, 89% 20%, 93% 25%, 96% 32%, 98% 39%, 99% 45%, 100% 50%, 99% 55%, 98% 61%, 96% 68%, 93% 75%, 89% 80%, 85% 85%, 80% 90%, 75% 93%, 69% 96%, 63% 98%, 56% 100%, 50% 100%, 44% 100%, 37% 98%, 31% 96%, 25% 93%, 20% 90%, 15% 85%, 11% 80%, 7% 75%, 4% 68%, 2% 61%, 1% 55%, 0% 50%, 1% 45%, 2% 39%, 4% 32%, 7% 25%, 11% 20%, 15% 15%, 20% 10%, 25% 7%, 31% 4%, 37% 2%, 44% 0%);
     }
 
     * {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      image-rendering: pixelated;
     }
 
     body {
-      margin: 0;
-      padding: 0;
-      background-color: var(--bg-color);
+      background-color: var(--bg-main);
       color: var(--text-main);
-      font-family: var(--font-family);
-      line-height: 1.6;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .info-page {
-      width: 100%;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .info-container {
-      max-width: 500px;
-      width: 100%;
-      border: 3px solid var(--accent-primary);
-      background: var(--bg-color);
-      padding: 25px 20px;
-      box-shadow: 6px 6px 0 var(--accent-secondary);
-      position: relative;
-    }
-
-    /* Memperbesar ukuran gambar sesuai permintaan */
-    .info-brand {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      margin-bottom: 25px;
-      border-bottom: 2px dashed var(--accent-secondary);
-      padding-bottom: 20px;
-    }
-
-    .info-brand img {
-      width: 75px;
-      height: 75px;
-      border: 2px solid var(--border-color);
-      padding: 5px;
-      background-color: var(--bg-color);
-      image-rendering: pixelated; /* Efek retro */
-    }
-
-    .info-brand div {
+      font-size: 15px;
       display: flex;
       flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
     }
 
-    .info-brand strong {
-      font-size: 1.4rem;
-      color: var(--accent-primary);
-      text-transform: uppercase;
-      letter-spacing: 1px;
+    /* HEADER MERAH */
+    .wa-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      background: var(--bg-header);
+      color: var(--text-header);
+      height: 60px;
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      z-index: 10;
     }
 
-    .info-brand span {
-      font-size: 0.9rem;
-      color: var(--text-main);
+    .me-profile {
+      display: flex;
+      align-items: center;
+    }
+
+    .me-profile img {
+      width: 42px;
+      height: 42px;
+      clip-path: var(--alias-circle);
+      object-fit: cover;
+      background: #ffffff;
+      padding: 2px;
+    }
+
+    .my-meta {
+      display: flex;
+      flex-direction: column;
+      margin-left: 12px;
+      justify-content: center;
+    }
+
+    .my-meta strong {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-header);
+    }
+
+    .my-meta span {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    /* KONTEN UTAMA */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .info-card {
-      margin-bottom: 20px;
-    }
-
-    .kicker {
-      display: inline-block;
-      background: var(--accent-secondary);
-      color: var(--bg-color);
-      padding: 3px 10px;
-      font-weight: bold;
-      text-transform: uppercase;
-      font-size: 0.8rem;
+      background: var(--bg-panel);
+      width: 100%;
+      max-width: 500px;
+      padding: 25px;
+      clip-path: var(--alias-16);
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.05));
       margin-bottom: 15px;
     }
 
-    .info-card h1 {
-      font-size: 1.5rem;
-      margin: 0 0 20px 0;
-      color: var(--accent-primary);
-      text-transform: uppercase;
-      border-left: 5px solid var(--accent-secondary);
-      padding-left: 10px;
-    }
-
-    .info-section {
-      margin-bottom: 20px;
-      font-size: 1.05rem;
-      text-align: left;
-      border: 1px solid var(--border-color);
-      padding: 15px;
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .info-section p {
-      margin: 0;
-      text-indent: 20px;
-    }
-
-    /* Style Tombol High Contrast */
-    button {
-      font-family: var(--font-family);
-      font-size: 1.1rem;
+    .kicker {
+      font-size: 11px;
       font-weight: bold;
-      text-transform: uppercase;
-      padding: 12px;
-      border: 2px solid var(--accent-primary);
-      background: var(--bg-color);
-      color: var(--accent-primary);
-      cursor: pointer;
-      transition: all 0.2s;
+      color: var(--accent);
+      letter-spacing: 1px;
+      display: block;
+      margin-bottom: 8px;
     }
 
-    button.full {
-      width: 100%;
-      margin-top: 15px;
+    h1, h2 {
+      font-weight: 500;
+      font-size: 22px;
+      margin-bottom: 12px;
+      color: var(--text-main);
     }
 
-    button:hover, button:active {
-      background: var(--accent-primary);
-      color: var(--bg-color);
-      box-shadow: 4px 4px 0 var(--accent-secondary);
+    p {
+      color: var(--text-sub);
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+    p:last-child {
+      margin-bottom: 0;
     }
 
-    /* Navigasi */
-    .info-navigation {
+    /* KOTAK PEMUTAR MUSIK */
+    .music-box {
+      background: var(--bg-input);
+      padding: 15px;
+      clip-path: var(--alias-10);
+      margin-top: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .music-box h2 {
+      font-size: 15px;
+      margin-bottom: 4px;
       display: flex;
-      justify-content: space-between;
-      margin-top: 30px;
-      border-top: 2px solid var(--accent-primary);
-      padding-top: 15px;
+      align-items: center;
+      gap: 8px;
     }
 
-    .info-nav-item {
+    .music-box p {
+      font-size: 13px;
+      margin-bottom: 15px;
+    }
+
+    .track-list {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .track-btn {
       flex: 1;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      padding: 10px;
+      clip-path: var(--alias-8);
+      color: var(--text-main);
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .track-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .music-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-panel);
+      padding: 10px 15px;
+      clip-path: var(--alias-24);
+    }
+
+    .play-btn {
+      background: var(--accent);
+      border: none;
+      width: 40px;
+      height: 40px;
+      clip-path: var(--alias-circle);
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .play-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .now-playing {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 5px;
-      background: transparent;
+      overflow: hidden;
+    }
+
+    .now-playing strong {
+      font-size: 14px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+    
+    .now-playing span {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    /* TOMBOL KEMBALI */
+    .primary {
+      background-color: var(--accent);
+      color: #ffffff;
       border: none;
-      color: var(--text-main);
-      padding: 10px;
-    }
-
-    .info-nav-item:hover, .info-nav-item.active {
-      color: var(--bg-color);
-      background: var(--accent-secondary);
-      border-color: var(--accent-secondary);
-      box-shadow: none;
-    }
-
-    .info-nav-item span {
-      font-size: 1.5rem;
-    }
-
-    .info-foot {
+      font-weight: 600;
+      padding: 14px 16px;
+      clip-path: var(--alias-24);
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 15px;
+      width: 100%;
+      max-width: 500px;
+      margin-top: 10px;
       text-align: center;
-      margin-top: 25px;
-      font-size: 0.8rem;
-      color: var(--text-main);
-      text-transform: uppercase;
-      letter-spacing: 1px;
+    }
+    
+    .primary:hover {
+      background-color: var(--accent-hover);
+    }
+
+    /* AUDIO ELEMENT (Disembunyikan) */
+    audio {
+      display: none;
     }
   </style>
 </head>
 
 <body>
 
-<div class="info-page">
-  <div class="info-container">
+  <!-- HEADER MERAH -->
+  <header class="wa-header">
+    <div class="me-profile">
+      <!-- Menggunakan logo yang lebih besar sesuai permintaan sebelumnya -->
+      <img src="img/chat_icon.png" alt="Logo">
+      <div class="my-meta">
+        <strong>Info Aplikasi</strong>
+        <span>Secret Message by Arinex</span>
+      </div>
+    </div>
+  </header>
 
-    <!-- BRAND -->
-    <div class="info-brand">
-      <img src="img/chat_icon.png" alt="Secret Message">
-      <div>
-        <strong>Secret Message</strong>
-        <span>System Log // Arinex</span>
+  <!-- KONTEN -->
+  <div class="content-area">
+    
+    <!-- KARTU INFO KESAN APLIKASI -->
+    <div class="info-card">
+      <span class="kicker">TENTANGN APLIKASI</span>
+      <h2>Informasi</h2>
+      <p>Kalau kamu bertanya-tanya kenapa aku repot-repot membuat semua ini, jawabannya sebenarnya jauh dari kata rumit. Aku membuat ini murni karena aku ingin bisa berkomunikasi lagi sama kamu.</p>
+      <p>Ada banyak hal yang mungkin sulit buat aku ungkapin lewat kata-kata biasa. Jadi, aku tuangkan semuanya lewat apa yang aku bangun ini. Ini adalah caraku untuk tetap terhubung sama kamu, caraku untuk bilang kalau aku rindu obrolan kita, dan caraku agar kita tetap punya cerita yang bisa dibahas bareng.</p>
+    </div>
+
+    <!-- KARTU PEMUTAR MUSIK -->
+    <div class="info-card music-box">
+      <h2>🎵 Pemutar Musik</h2>
+      <p>...</p>
+      
+      <div class="track-list">
+        <button class="track-btn" onclick="setTrack(0)" id="btnTrack0">Musik 1</button>
+        <button class="track-btn" onclick="setTrack(1)" id="btnTrack1">Musik 2</button>
+      </div>
+      
+      <div class="music-controls">
+        <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+        <div class="now-playing">
+          <strong id="trackTitle">Pilih lagu...</strong>
+          <span id="trackArtist">Secret Message</span>
+        </div>
       </div>
     </div>
 
-    <!-- INFO CARD -->
-    <main class="info-card">
-      <span class="kicker">Teruntuk Kamu</span>
-      
-      <h1>Pesan Rahasia</h1>
-
-      <div class="info-section">
-        <p>
-          Kalau kamu bertanya-tanya kenapa aku repot-repot membuat semua ini, jawabannya sebenarnya jauh dari kata rumit. Aku membuat ini murni karena aku ingin bisa berkomunikasi lagi sama kamu.
-        </p>
-      </div>
-
-      <div class="info-section">
-        <p>
-          Ada banyak hal yang mungkin sulit buat aku ungkapin lewat kata-kata biasa. Jadi, aku tuangkan semuanya lewat apa yang aku bangun ini. Ini adalah caraku untuk tetap terhubung sama kamu, caraku untuk bilang kalau aku rindu obrolan kita, dan caraku agar kita tetap punya cerita yang bisa dibahas bareng.
-        </p>
-      </div>
-
-      <button id="backMessage" class="primary full" type="button">
-        [ KEMBALI KE PESAN ]
-      </button>
-    </main>
-
-    <!-- NAVIGASI -->
-    <nav class="info-navigation">
-      <button id="navMessage" class="info-nav-item" type="button">
-        <span>💬</span>
-        <small>Pesan</small>
-      </button>
-
-      <button class="info-nav-item active" type="button">
-        <span>ⓘ</span>
-        <small>Info</small>
-      </button>
-    </nav>
-
-    <footer class="info-foot">
-      app by @arinex · 2026
-    </footer>
-
+    <!-- TOMBOL KEMBALI -->
+    <button class="primary" onclick="window.location.href='index.html'">
+      Kembali
+    </button>
+    
   </div>
-</div>
 
-<script>
-(function () {
-  const THEME_KEY = 'arinex_theme';
+  <!-- ELEMENT AUDIO -->
+  <audio id="bgMusic" loop preload="auto"></audio>
 
-  function applyTheme() {
-    const theme = localStorage.getItem(THEME_KEY) || 'dark';
-    document.documentElement.setAttribute('data-theme', theme);
-  }
+  <!-- SCRIPT UNTUK MUSIK (MEDIA SESSION + LOCALSTORAGE) -->
+  <script>
+    const audio = document.getElementById('bgMusic');
+    const playBtn = document.getElementById('playBtn');
+    const trackTitle = document.getElementById('trackTitle');
+    
+    // Daftar lagu sesuai request
+    const playlist = [
+      { src: 'musik/musik1.mp3', title: 'Melodi Kenangan', artist: 'Pesan Rahasia' },
+      { src: 'musik/musik2.mp3', title: 'Cerita Kita', artist: 'Pesan Rahasia' }
+    ];
 
-  applyTheme();
+    let currentTrackIndex = -1;
 
-  /* Jika tema berubah dari index.html pada tab lain */
-  window.addEventListener('storage', event => {
-    if (event.key === THEME_KEY) {
-      applyTheme();
+    // Fungsi untuk memperbarui tampilan tombol dan teks
+    function updateUI() {
+      if (audio.paused) {
+        playBtn.innerHTML = '▶'; // Ikon Play
+      } else {
+        playBtn.innerHTML = '⏸'; // Ikon Pause
+      }
+
+      // Update status tombol lagu aktif
+      document.getElementById('btnTrack0').classList.toggle('active', currentTrackIndex === 0);
+      document.getElementById('btnTrack1').classList.toggle('active', currentTrackIndex === 1);
+
+      if (currentTrackIndex >= 0) {
+        trackTitle.innerText = playlist[currentTrackIndex].title;
+      }
     }
-  });
 
-  document.getElementById('backMessage')?.addEventListener('click', () => {
-    window.location.href = 'index.html';
-  });
+    // Mengatur lagu yang dipilih
+    function setTrack(index) {
+      if (currentTrackIndex === index) {
+        // Jika klik lagu yang sama, biarkan main/pause
+        togglePlay();
+        return;
+      }
+      
+      currentTrackIndex = index;
+      audio.src = playlist[index].src;
+      audio.play().catch(e => console.log("Autoplay dicegah browser", e));
+      
+      setupMediaSession();
+      saveMusicState();
+      updateUI();
+    }
 
-  document.getElementById('navMessage')?.addEventListener('click', () => {
-    window.location.href = 'index.html';
-  });
-})();
-</script>
+    // Tombol Play/Pause
+    function togglePlay() {
+      if (currentTrackIndex === -1) {
+        // Default ke musik 1 jika belum ada yang dipilih
+        setTrack(0);
+        return;
+      }
+
+      if (audio.paused) {
+        audio.play();
+      } else {
+        audio.pause();
+      }
+      
+      saveMusicState();
+      updateUI();
+    }
+
+    // Media Session API agar musik bisa dikontrol di lockscreen / background HP
+    function setupMediaSession() {
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: playlist[currentTrackIndex].title,
+          artist: playlist[currentTrackIndex].artist,
+          album: 'Secret Message',
+          artwork: [
+            { src: 'img/chat_icon.png', sizes: '512x512', type: 'image/png' }
+          ]
+        });
+
+        navigator.mediaSession.setActionHandler('play', () => {
+          audio.play();
+          updateUI();
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          audio.pause();
+          updateUI();
+        });
+      }
+    }
+
+    // Simpan state di localStorage agar bisa dilanjutkan jika aplikasi me-reload
+    function saveMusicState() {
+      localStorage.setItem('arinex_music_track', currentTrackIndex);
+      localStorage.setItem('arinex_music_time', audio.currentTime);
+      localStorage.setItem('arinex_music_playing', !audio.paused);
+    }
+
+    audio.addEventListener('timeupdate', () => {
+      // Update waktu secara berkala ke localStorage
+      if(currentTrackIndex >= 0) {
+        localStorage.setItem('arinex_music_time', audio.currentTime);
+      }
+    });
+
+    audio.addEventListener('ended', updateUI);
+    audio.addEventListener('pause', updateUI);
+    audio.addEventListener('play', updateUI);
+
+    // Saat halaman dimuat, cek apakah sebelumnya ada lagu yang terputar
+    window.onload = () => {
+      const savedTrack = localStorage.getItem('arinex_music_track');
+      const savedTime = localStorage.getItem('arinex_music_time');
+      const wasPlaying = localStorage.getItem('arinex_music_playing') === 'true';
+
+      if (savedTrack !== null && savedTrack !== "-1") {
+        currentTrackIndex = parseInt(savedTrack);
+        audio.src = playlist[currentTrackIndex].src;
+        if (savedTime) audio.currentTime = parseFloat(savedTime);
+        updateUI();
+        
+        // Catatan: Browser modern memblokir autoplay saat halaman direload
+        // jadi kita tidak memanggil audio.play() otomatis kecuali user mengeklik.
+        if (wasPlaying) {
+          trackTitle.innerText = playlist[currentTrackIndex].title + " (Siap diputar)";
+        }
+      }
+    };
+  </script>
 
 </body>
 </html>
