@@ -2,300 +2,300 @@
 <html lang="id">
 
 <head>
-
   <meta charset="utf-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  >
-
-  <meta
-    name="theme-color"
-    content="#ed1c24"
-  >
-
-  <link
-    rel="icon"
-    href="img/chat_icon.png"
-    type="image/png"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" href="img/chat_icon.png" type="image/png">
+  <title>Info — Secret Message</title>
 
   <!-- Terapkan tema sebelum halaman tampil -->
   <script>
     (function () {
-
-      const theme =
-        localStorage.getItem('arinex_theme') || 'light';
-
-      document.documentElement
-        .setAttribute(
-          'data-theme',
-          theme
-        );
-
+      const theme = localStorage.getItem('arinex_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
     })();
   </script>
 
-  <link
-    rel="stylesheet"
-    href="style.css?v=3.0"
-  >
+  <!-- CSS High Contrast Retro / Industrial -->
+  <style>
+    :root {
+      --bg-color: #000000;
+      --text-main: #FFFFFF;
+      --accent-primary: #FFFF00; /* Kuning terang */
+      --accent-secondary: #00FFFF; /* Cyan terang */
+      --border-color: #FFFFFF;
+      --font-family: 'Courier New', Courier, monospace;
+    }
 
-  <title>Info — Secret Message</title>
+    /* Opsi jika sistem beralih ke light theme, tetap pakai kontras tinggi */
+    [data-theme="light"] {
+      --bg-color: #FFFFFF;
+      --text-main: #000000;
+      --accent-primary: #0000FF;
+      --accent-secondary: #FF0000;
+      --border-color: #000000;
+    }
 
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      line-height: 1.6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .info-page {
+      width: 100%;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .info-container {
+      max-width: 500px;
+      width: 100%;
+      border: 3px solid var(--accent-primary);
+      background: var(--bg-color);
+      padding: 25px 20px;
+      box-shadow: 6px 6px 0 var(--accent-secondary);
+      position: relative;
+    }
+
+    /* Memperbesar ukuran gambar sesuai permintaan */
+    .info-brand {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 25px;
+      border-bottom: 2px dashed var(--accent-secondary);
+      padding-bottom: 20px;
+    }
+
+    .info-brand img {
+      width: 75px;
+      height: 75px;
+      border: 2px solid var(--border-color);
+      padding: 5px;
+      background-color: var(--bg-color);
+      image-rendering: pixelated; /* Efek retro */
+    }
+
+    .info-brand div {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .info-brand strong {
+      font-size: 1.4rem;
+      color: var(--accent-primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .info-brand span {
+      font-size: 0.9rem;
+      color: var(--text-main);
+    }
+
+    .info-card {
+      margin-bottom: 20px;
+    }
+
+    .kicker {
+      display: inline-block;
+      background: var(--accent-secondary);
+      color: var(--bg-color);
+      padding: 3px 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      margin-bottom: 15px;
+    }
+
+    .info-card h1 {
+      font-size: 1.5rem;
+      margin: 0 0 20px 0;
+      color: var(--accent-primary);
+      text-transform: uppercase;
+      border-left: 5px solid var(--accent-secondary);
+      padding-left: 10px;
+    }
+
+    .info-section {
+      margin-bottom: 20px;
+      font-size: 1.05rem;
+      text-align: left;
+      border: 1px solid var(--border-color);
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .info-section p {
+      margin: 0;
+      text-indent: 20px;
+    }
+
+    /* Style Tombol High Contrast */
+    button {
+      font-family: var(--font-family);
+      font-size: 1.1rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      padding: 12px;
+      border: 2px solid var(--accent-primary);
+      background: var(--bg-color);
+      color: var(--accent-primary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button.full {
+      width: 100%;
+      margin-top: 15px;
+    }
+
+    button:hover, button:active {
+      background: var(--accent-primary);
+      color: var(--bg-color);
+      box-shadow: 4px 4px 0 var(--accent-secondary);
+    }
+
+    /* Navigasi */
+    .info-navigation {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+      border-top: 2px solid var(--accent-primary);
+      padding-top: 15px;
+    }
+
+    .info-nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      padding: 10px;
+    }
+
+    .info-nav-item:hover, .info-nav-item.active {
+      color: var(--bg-color);
+      background: var(--accent-secondary);
+      border-color: var(--accent-secondary);
+      box-shadow: none;
+    }
+
+    .info-nav-item span {
+      font-size: 1.5rem;
+    }
+
+    .info-foot {
+      text-align: center;
+      margin-top: 25px;
+      font-size: 0.8rem;
+      color: var(--text-main);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  </style>
 </head>
-
 
 <body>
 
 <div class="info-page">
-
   <div class="info-container">
 
-
     <!-- BRAND -->
-
     <div class="info-brand">
-
-      <img
-        src="img/chat_icon.png"
-        alt="Secret Message"
-      >
-
+      <img src="img/chat_icon.png" alt="Secret Message">
       <div>
-
-        <strong>
-          The Secreet Message
-        </strong>
-
-        <span>
-          Simple messaging, private.
-        </span>
-
+        <strong>Secret Message</strong>
+        <span>System Log // Arinex</span>
       </div>
-
     </div>
 
-
     <!-- INFO CARD -->
-
     <main class="info-card">
-
-      <span class="kicker">
-        INFORMATION
-      </span>
-
-      <h1>
-        Tentang Pesan Rahasia
-      </h1>
-
-      <p class="info-sub">
-        Ruang komunikasi sederhana
-        untuk berbagi pesan secara realtime.
-      </p>
-
+      <span class="kicker">Teruntuk Kamu</span>
+      
+      <h1>Pesan Rahasia</h1>
 
       <div class="info-section">
-
-        <h2>
-          Secret Message
-        </h2>
-
         <p>
-          Aplikasi pesan realtime sederhana
-          yang dikembangkan oleh Arinex.
+          Kalau kamu bertanya-tanya kenapa aku repot-repot membuat semua ini, jawabannya sebenarnya jauh dari kata rumit. Aku membuat ini murni karena aku ingin bisa berkomunikasi lagi sama kamu.
         </p>
-
       </div>
-
 
       <div class="info-section">
-
-        <h2>
-          Privasi
-        </h2>
-
         <p>
-          Gunakan aplikasi dengan bijak.
-          Jangan membagikan informasi sensitif
-          kepada pihak yang tidak dipercaya.
+          Ada banyak hal yang mungkin sulit buat aku ungkapin lewat kata-kata biasa. Jadi, aku tuangkan semuanya lewat apa yang aku bangun ini. Ini adalah caraku untuk tetap terhubung sama kamu, caraku untuk bilang kalau aku rindu obrolan kita, dan caraku agar kita tetap punya cerita yang bisa dibahas bareng.
         </p>
-
       </div>
 
-
-      <div class="info-section">
-
-        <h2>
-          Versi
-        </h2>
-
-        <p>
-          Arinex Secret Message · 2026
-        </p>
-
-      </div>
-
-
-      <button
-        id="backMessage"
-        class="primary full"
-        type="button"
-      >
-        ← Kembali ke Pesan
+      <button id="backMessage" class="primary full" type="button">
+        [ KEMBALI KE PESAN ]
       </button>
-
     </main>
 
-
     <!-- NAVIGASI -->
-
     <nav class="info-navigation">
-
-      <button
-        id="infoMessage"
-        class="info-nav-item"
-        type="button"
-      >
-
-        <span>
-          💬
-        </span>
-
-        <small>
-          Pesan
-        </small>
-
+      <button id="navMessage" class="info-nav-item" type="button">
+        <span>💬</span>
+        <small>Pesan</small>
       </button>
 
-
-      <button
-        class="info-nav-item active"
-        type="button"
-      >
-
-        <span>
-          ⓘ
-        </span>
-
-        <small>
-          Info
-        </small>
-
+      <button class="info-nav-item active" type="button">
+        <span>ⓘ</span>
+        <small>Info</small>
       </button>
-
     </nav>
 
-
     <footer class="info-foot">
-      app by @arinex 2026 · Realtime
+      app by @arinex · 2026
     </footer>
 
   </div>
-
 </div>
 
-
 <script>
-
 (function () {
-
-  const THEME_KEY =
-    'arinex_theme';
-
+  const THEME_KEY = 'arinex_theme';
 
   function applyTheme() {
-
-    const theme =
-      localStorage.getItem(
-        THEME_KEY
-      ) || 'light';
-
-
-    document.documentElement
-      .setAttribute(
-        'data-theme',
-        theme
-      );
-
-
-    document.body
-      .setAttribute(
-        'data-theme',
-        theme
-      );
-
+    const theme = localStorage.getItem(THEME_KEY) || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
   }
-
 
   applyTheme();
 
-
-  /*
-     Jika tema berubah dari index.html
-     pada tab lain, info.html ikut berubah.
-  */
-
-  window.addEventListener(
-    'storage',
-    event => {
-
-      if (
-        event.key ===
-        THEME_KEY
-      ) {
-
-        applyTheme();
-
-      }
-
+  /* Jika tema berubah dari index.html pada tab lain */
+  window.addEventListener('storage', event => {
+    if (event.key === THEME_KEY) {
+      applyTheme();
     }
-  );
+  });
 
+  document.getElementById('backMessage')?.addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
 
-  document
-    .getElementById('backMessage')
-    ?.addEventListener(
-      'click',
-      () => {
-
-        window.location.href =
-          'index.html';
-
-      }
-    );
-
-
-  document
-    .getElementById('infoMessage')
-    ?.addEventListener(
-      'click',
-      () => {
-
-        window.location.reload();
-
-      }
-    );
-
-
-  document
-    .getElementById('infoMessage')
-    ?.addEventListener(
-      'click',
-      () => {
-
-        window.location.href =
-          'info.html';
-
-      }
-    );
-
-
+  document.getElementById('navMessage')?.addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
 })();
-
 </script>
 
 </body>
-
 </html>
