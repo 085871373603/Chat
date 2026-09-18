@@ -256,7 +256,7 @@
     const termuxInputLine = document.getElementById("termuxInputLine");
     const app = document.getElementById("app");
     
-    // Teks simulasi persis seperti startup Termux
+    // Teks simulasi panjang: Autentikasi & Konversi Windows .NET ke Android
     const termuxLog = [
       "Welcome to Termux!",
       "",
@@ -270,17 +270,41 @@
       " * Install a package: pkg install <package>",
       " * Upgrade packages:  pkg upgrade",
       "",
-      "Subscribing to additional repositories:",
-      " * Root:     pkg install root-repo",
-      " * Unstable: pkg install unstable-repo",
-      " * X11:      pkg install x11-repo",
-      "",
       "Report issues at https://termux.com/issues",
       "",
-      "$ ./start-app.sh",
-      "[*] Booting Secret Message System...",
-      "[*] Verifying secure keys... [OK]",
-      "[*] Starting interface..."
+      "$ su -c 'auth-service'",
+      "Requesting root privileges... [GRANTED]",
+      "[*] Mounting virtual file systems...",
+      "    -> /proc [OK]",
+      "    -> /sys  [OK]",
+      "    -> /dev  [OK]",
+      "",
+      "$ ./wine-mono-loader.sh --target=SecretMessage.exe --env=android_aarch64",
+      "[*] Initializing cross-platform execution environment...",
+      "[*] Allocating virtual memory pages... [OK]",
+      "[*] Loading Mono .NET Runtime (v6.12.0) for ARM64...",
+      "[*] Auth check: Verifying cryptographic signature of SecretMessage.exe...",
+      "    -> Signature algorithm: RSA-2048",
+      "    -> Hash: SHA-256 (VALID - AUTHORIZED USER)",
+      "[*] Parsing Portable Executable (PE) headers...",
+      "    -> CLR Header found. Target framework: .NET Framework 4.7.2",
+      "    -> CPU Architecture: MSIL (Any CPU)",
+      "[*] Invoking JIT Compiler (Just-In-Time)...",
+      "    -> Translating x86/x64 IL instructions to AArch64 native opcodes...",
+      "    [||||||||||||||||||||] 100% Translation complete.",
+      "[*] Initializing Android Graphics Abstraction Layer (AGAL)...",
+      "[*] Mapping Windows Forms / WPF calls to Android View system...",
+      "    -> Converting System.Drawing to android.graphics...",
+      "    -> Hooking user32.dll inputs to Android TouchEvents...",
+      "[*] Creating EGL context for hardware acceleration... [OK]",
+      "[*] Bypassing SELinux restrictions for socket binding...",
+      "[*] Establishing secure WebSocket tunnel on port 8443...",
+      "    -> Generating TLS v1.3 certificates... [DONE]",
+      "[*] Loading main assembly: SecretMessage.dll",
+      "[*] Executing entry point: SecretMessage.Program.Main()",
+      "[*] UI Engine compiled successfully.",
+      "[*] Handing over control to Android SurfaceFlinger...",
+      "[*] Launching user interface..."
     ];
 
     let lineIdx = 0;
@@ -296,8 +320,8 @@
         termuxContent.appendChild(line);
         lineIdx++;
         
-        // Jeda pengetikan acak (cepat)
-        setTimeout(printLine, Math.random() * 60 + 20); 
+        // Jeda pengetikan acak tapi sangat cepat agar selesai dalam < 3 detik
+        setTimeout(printLine, Math.random() * 20 + 5); 
       } else {
         termuxInputLine.style.display = "block";
       }
@@ -311,9 +335,10 @@
       app.style.display = "flex";
       // Kembalikan meta warna tema aplikasi asli (Merah)
       document.querySelector('meta[name="theme-color"]').setAttribute("content", "#ed1c24");
-    }, 3000);
+    }, 5000);
   });
 </script>
+
 
 <script type="module" src="js/app.js?v=3.0"></script>
 
