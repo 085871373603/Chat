@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#000000"> <!-- Diubah ke hitam untuk layar awal Termux -->
+  <meta name="theme-color" content="#ffffff"> <!-- Berubah dinamis nanti -->
   <meta name="description" content="Arinex Chat — realtime messaging sederhana dan aman.">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
 
-  <link rel="stylesheet" href="css/style.css?v=3.0">
+  <link rel="stylesheet" href="css/style.css?v=4.0">
 
   <script>
     (function () {
@@ -24,17 +24,40 @@
 <body>
 
 <!-- =====================================================
-     LAYAR BOOTING TERMUX (Berjalan selama 3 detik)
+     FASE 1: LOADING SCREEN (2 DETIK)
      ===================================================== -->
-<div id="termuxScreen" class="termux-screen">
-  <div id="termuxContent"></div>
-  <div class="termux-input-line" style="display: none;" id="termuxInputLine">
-    <span class="termux-prompt">$ loading...</span> <span class="termux-cursor"></span>
+<div id="bootLoading" class="boot-overlay" style="background: var(--bg-main);">
+  <div class="boot-spinner"></div>
+  <p style="color: var(--text-main); font-weight: 500; margin-top: 15px;">Memuat sistem...</p>
+</div>
+
+<!-- =====================================================
+     FASE 2: POPUP TERMUX (3 DETIK)
+     ===================================================== -->
+<div id="termuxPopupOverlay" class="boot-overlay" style="display: none; background: rgba(0, 0, 0, 0.75);">
+  <div class="termux-window">
+    <div class="termux-header">
+      <img src="img/termux.png" alt="Termux Logo">
+      <span>Termux - Migrasi Sistem</span>
+    </div>
+    <div class="termux-body" id="termuxContent">
+      <!-- Log Termux akan muncul di sini -->
+      <div class="termux-input-line" style="display: none;" id="termuxInputLine">
+        <span class="termux-prompt">$</span> <span class="termux-cursor"></span>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- =====================================================
-     APLIKASI UTAMA (Disembunyikan saat Termux berjalan)
+     FASE 3: POPUP BERHASIL MIGRASI (MUDAR DALAM 2 DETIK)
+     ===================================================== -->
+<div id="bootToast" class="boot-toast">
+  ✅ Berhasil migrasi OS Windows to Android
+</div>
+
+<!-- =====================================================
+     APLIKASI UTAMA (Disembunyikan saat booting)
      ===================================================== -->
 <div id="app" style="display: none;">
 
@@ -128,7 +151,6 @@
 
   <!-- CHAT -->
   <section id="chatView" class="chat-shell hidden">
-    <!-- SIDEBAR -->
     <aside id="sidebar" class="sidebar">
       <header class="wa-header">
         <div class="me-profile">
@@ -165,7 +187,6 @@
       <button id="emptyAddButton" class="hidden" type="button"></button>
     </aside>
 
-    <!-- CONVERSATION -->
     <main class="conversation">
       <div id="welcomeConversation" class="welcome-pane">
         <img src="img/chat_logo.png" alt="" class="welcome-logo">
@@ -199,9 +220,7 @@
       </div>
     </main>
 
-    <!-- =====================================================
-         ACCOUNT MENU
-         ===================================================== -->
+    <!-- ACCOUNT MENU -->
     <div id="accountMenu" class="popover hidden" aria-hidden="true">
       <div class="popover-user">
         <img id="menuAvatar" src="img/logo_user.png" alt="">
@@ -215,7 +234,6 @@
         ☼ <span>Ganti Tema</span>
       </button>
 
-      <!-- MENU TENTANG APLIKASI TELAH DIPINDAH DAN DIRAPIKAN -->
       <button id="menuInfo" type="button" onclick="window.location.href='info.html'">
         <img src="img/apl.png" style="width: 16px; height: 16px; object-fit: contain; margin-right: 2px;" alt="">
         <span>Tentang Aplikasi</span>
@@ -243,34 +261,24 @@
     </section>
   </div>
 
-  <!-- TOAST -->
+  <!-- TOAST UTAMA APLIKASI -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 </div>
 
-<!-- SCRIPT SIMULASI TERMUX BOOTING -->
+<!-- SCRIPT ALUR BOOTING -->
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    const termuxScreen = document.getElementById("termuxScreen");
+    const loadingScreen = document.getElementById("bootLoading");
+    const termuxOverlay = document.getElementById("termuxPopupOverlay");
     const termuxContent = document.getElementById("termuxContent");
     const termuxInputLine = document.getElementById("termuxInputLine");
+    const bootToast = document.getElementById("bootToast");
     const app = document.getElementById("app");
     
-    // Teks simulasi panjang: Autentikasi & Konversi Windows .NET ke Android
+    // Teks Log Konversi
     const termuxLog = [
       "Welcome to Termux!",
-      "",
-      "Wiki:            https://wiki.termux.com",
-      "Community forum: https://termux.com/community",
-      "Gitter chat:     https://gitter.im/termux/termux",
-      "IRC channel:     #termux on freenode",
-      "",
-      "Working with packages:",
-      " * Search packages:   pkg search <query>",
-      " * Install a package: pkg install <package>",
-      " * Upgrade packages:  pkg upgrade",
-      "",
-      "Report issues at https://termux.com/issues",
       "",
       "$ su -c 'auth-service'",
       "Requesting root privileges... [GRANTED]",
@@ -280,30 +288,15 @@
       "    -> /dev  [OK]",
       "",
       "$ ./wine-mono-loader.sh --target=SecretMessage.exe --env=android_aarch64",
-      "[*] Initializing cross-platform execution environment...",
-      "[*] Allocating virtual memory pages... [OK]",
       "[*] Loading Mono .NET Runtime (v6.12.0) for ARM64...",
-      "[*] Auth check: Verifying cryptographic signature of SecretMessage.exe...",
-      "    -> Signature algorithm: RSA-2048",
-      "    -> Hash: SHA-256 (VALID - AUTHORIZED USER)",
-      "[*] Parsing Portable Executable (PE) headers...",
-      "    -> CLR Header found. Target framework: .NET Framework 4.7.2",
-      "    -> CPU Architecture: MSIL (Any CPU)",
-      "[*] Invoking JIT Compiler (Just-In-Time)...",
-      "    -> Translating x86/x64 IL instructions to AArch64 native opcodes...",
+      "[*] Auth check: Verifying signature of SecretMessage.exe...",
+      "    -> Signature algorithm: RSA-2048 [VALID]",
+      "[*] Invoking JIT Compiler...",
+      "    -> Translating MSIL to AArch64 opcodes...",
       "    [||||||||||||||||||||] 100% Translation complete.",
-      "[*] Initializing Android Graphics Abstraction Layer (AGAL)...",
-      "[*] Mapping Windows Forms / WPF calls to Android View system...",
-      "    -> Converting System.Drawing to android.graphics...",
-      "    -> Hooking user32.dll inputs to Android TouchEvents...",
-      "[*] Creating EGL context for hardware acceleration... [OK]",
-      "[*] Bypassing SELinux restrictions for socket binding...",
-      "[*] Establishing secure WebSocket tunnel on port 8443...",
-      "    -> Generating TLS v1.3 certificates... [DONE]",
-      "[*] Loading main assembly: SecretMessage.dll",
-      "[*] Executing entry point: SecretMessage.Program.Main()",
-      "[*] UI Engine compiled successfully.",
-      "[*] Handing over control to Android SurfaceFlinger...",
+      "[*] Initializing Android Graphics Abstraction Layer...",
+      "[*] Mapping Windows Forms calls to Android View...",
+      "[*] Creating EGL context... [OK]",
       "[*] Launching user interface..."
     ];
 
@@ -312,35 +305,49 @@
     function printLine() {
       if (lineIdx < termuxLog.length) {
         const line = document.createElement("div");
-        line.className = "termux-text";
-        
-        // Agar persis Termux, tanda spasi awal harus terender
         line.innerHTML = termuxLog[lineIdx].replace(/ /g, "&nbsp;"); 
-        
         termuxContent.appendChild(line);
+        termuxContent.scrollTop = termuxContent.scrollHeight; // Auto-scroll ke bawah
         lineIdx++;
         
-        // Jeda pengetikan acak tapi sangat cepat agar selesai dalam < 3 detik
-        setTimeout(printLine, Math.random() * 20 + 5); 
+        // Jeda pengetikan (cepat agar muat dalam 3 detik)
+        setTimeout(printLine, Math.random() * 50 + 20); 
       } else {
         termuxInputLine.style.display = "block";
       }
     }
 
-    printLine();
-
-    // Hapus termux dan tampilkan UI utama persis setelah 3 detik
+    // FASE 1: Tunggu 2 detik di Loading Spinner
     setTimeout(() => {
-      termuxScreen.style.display = "none";
-      app.style.display = "flex";
-      // Kembalikan meta warna tema aplikasi asli (Merah)
-      document.querySelector('meta[name="theme-color"]').setAttribute("content", "#ed1c24");
-    }, 5000);
+      loadingScreen.style.display = "none";
+      termuxOverlay.style.display = "flex"; // Munculkan popup Termux
+      
+      printLine(); // Mulai jalankan script Termux
+
+      // FASE 2: Tunggu 3 detik untuk Termux
+      setTimeout(() => {
+        termuxOverlay.style.display = "none";
+        app.style.display = "flex";
+        
+        // Ganti warna meta status bar menjadi merah khas aplikasimu
+        document.querySelector('meta[name="theme-color"]').setAttribute("content", "#ed1c24");
+
+        // FASE 3: Tampilkan Notifikasi Sukses Migrasi
+        bootToast.classList.add("show");
+
+        // Hilangkan notifikasi setelah 2 detik
+        setTimeout(() => {
+          bootToast.classList.remove("show");
+        }, 2000);
+
+      }, 3000);
+
+    }, 2000);
+
   });
 </script>
 
-
-<script type="module" src="js/app.js?v=3.0"></script>
+<script type="module" src="js/app.js?v=4.0"></script>
 
 </body>
 </html>
