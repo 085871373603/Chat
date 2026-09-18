@@ -13,7 +13,60 @@
   --bubble-in: #ffffff; 
   --bubble-out: #e6f4ea; /* Hijau sangat muda untuk chat keluar */
   --danger: #ef5350;
+/* =====================================================
+   TAMPILAN TERMUX BOOT SCREEN
+   ===================================================== */
+.termux-screen {
+  position: fixed;
+  inset: 0;
+  background-color: #000000;
+  color: #c4c4c4; /* Warna abu-abu terang standar Termux */
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  z-index: 9999;
+  padding: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 
+.termux-text {
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.termux-input-line {
+  margin-top: 5px;
+}
+
+.termux-prompt {
+  color: #00ff00; /* Hijau dolar khas shell */
+  font-weight: bold;
+}
+
+.termux-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 15px;
+  background-color: #c4c4c4;
+  vertical-align: middle;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* =====================================================
+   MENGHILANGKAN SISA AUTH NAVIGATION YANG LAMA 
+   ===================================================== */
+.auth-navigation {
+  display: none !important;
+}
+
+
+  
   /* --- DEFINISI LENGKUNGAN PIXELATED (RESOLUSI TINGGI / 1px STEPS) --- */
   
   /* Radius 8px */
