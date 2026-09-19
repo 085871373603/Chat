@@ -278,36 +278,26 @@
     
     // Teks Log Konversi
     const termuxLog = [
-      Welcome to Termux!
-
-$ su -c './auth-service'
-Requesting root privileges... [GRANTED]
-
-[*] Initializing Android environment...
-    -> /proc [OK]
-    -> /sys  [OK]
-    -> /dev  [OK]
-
-$ ./wine-mono-loader.sh --target=SecretMessage.exe --arch=aarch64
-
-[*] Loading Mono runtime...
-    -> Mono runtime: v6.12.0
-    -> Architecture: AArch64 [OK]
-
-[*] Verifying target...
-    -> Target: SecretMessage.exe
-    -> Format: PE/.NET executable [OK]
-
-[*] Initializing compatibility layer...
-    -> Wine prefix [OK]
-    -> Mono runtime [OK]
-    -> Graphics backend [OK]
-
-[*] Starting application...
-[*] Initializing Windows Forms...
-[*] Creating graphics context... [OK]
-
-[+] SecretMessage.exe started successfully.
+            "TERMINAL AUTHENTICATION",
+      "",
+      "$ su -c 'auth-service'",
+      "Requesting root privileges... [GRANTED]",
+      "[*] Mounting virtual file systems...",
+      "    -> /proc [OK]",
+      "    -> /sys  [OK]",
+      "    -> /dev  [OK]",
+      "",
+      "$ ./wine-mono-loader.sh --target=SecretMessage.exe --env=android_aarch64",
+      "[*] Loading Mono .NET Runtime (v6.12.0) for ARM64...",
+      "[*] Auth check: Verifying signature of SecretMessage.exe...",
+      "    -> Signature algorithm: RSA-2048 [VALID]",
+      "[*] Invoking JIT Compiler...",
+      "    -> Translating MSIL to AArch64 opcodes...",
+      "    [||||||||||||||||||||] 100% Translation complete.",
+      "[*] Initializing Android Graphics Abstraction Layer...",
+      "[*] Mapping Windows Forms calls to Android View...",
+      "[*] Creating EGL context... [OK]",
+      "[*] Launching user interface..."
 
     let lineIdx = 0;
     
