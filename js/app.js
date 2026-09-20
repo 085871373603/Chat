@@ -203,10 +203,17 @@ function updateThemeMenu(theme) {
             ? 'Mode terang'
             : 'Mode gelap';
 
-    menu.firstChild.textContent =
-        theme === 'dark'
-            ? '☀ '
-            : '☾ ';
+    if (menu.firstChild && menu.firstChild.nodeType === 3) {
+        menu.firstChild.textContent =
+            theme === 'dark'
+                ? '☀ '
+                : '☾ ';
+    } else {
+        menu.insertBefore(
+            document.createTextNode(theme === 'dark' ? '☀ ' : '☾ '),
+            menu.firstChild
+        );
+    }
 }
 
 
@@ -217,6 +224,10 @@ function updateThemeMenu(theme) {
 */
 
 applyTheme(getTheme());
+
+document.addEventListener('DOMContentLoaded', () => {
+    applyTheme(getTheme());
+});
 
 
 /*
