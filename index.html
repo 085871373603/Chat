@@ -69,8 +69,8 @@
         <div class="auth-brand">
           <img src="img/chat_icon.png" alt="Arinex Chat">
           <div>
-            <strong>The Secret Message</strong>
-            <span>Simple messaging, private.</span>
+            <strong>Pigeon</strong>
+            <span>Secreet Message</span>
           </div>
         </div>
 
@@ -79,28 +79,28 @@
 
           <!-- LOGIN -->
           <div id="loginPanel" class="auth-panel">
-            <h1>Selamat Datang</h1>
-            <p class="sub">Login dengan email dan password</p>
+            <h1>Welcome</h1>
+            <p class="sub">Log in with your email and password</p>
 
             <form id="loginForm" novalidate>
               <input id="loginEmail" type="email" placeholder="Email" autocomplete="username" maxlength="254" required>
               <div class="password-wrap">
                 <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" maxlength="72" required>
-                <button type="button" class="eye" data-target="loginPassword" aria-label="Tampilkan password">◉</button>
+                <button type="button" class="eye" data-target="loginPassword" aria-label="Show password">◉</button>
               </div>
               <button class="primary full" type="submit">Login</button>
             </form>
 
             <div class="auth-links">
-              <button id="showReset" class="text-btn" type="button">Lupa password?</button>
-              <button id="showRegister" class="text-btn strong" type="button">Buat akun</button>
+              <button id="showReset" class="text-btn" type="button">Forgot Password?</button>
+              <button id="showRegister" class="text-btn strong" type="button">Create an account</button>
             </div>
           </div>
 
           <!-- REGISTER -->
           <div id="registerPanel" class="auth-panel hidden">
-            <h1>Buat akun</h1>
-            <p class="sub">Registrasi Akun Baru</p>
+            <h1>Create an account</h1>
+            <p class="sub">Account Registration</p>
 
             <form id="registerForm" novalidate>
               <input id="registerName" type="text" placeholder="Nama pengguna" maxlength="40" autocomplete="name" required>
@@ -109,28 +109,28 @@
                 <input id="registerPassword" type="password" placeholder="Password" maxlength="72" autocomplete="new-password" required>
                 <button type="button" class="eye" data-target="registerPassword" aria-label="Tampilkan password">◉</button>
               </div>
-              <div class="hint">Min. 8 karakter (Besar, Kecil, Angka, Simbol)</div>
-              <input id="registerPassword2" type="password" placeholder="Konfirmasi Password" maxlength="72" autocomplete="new-password" required>
-              <button class="primary full" type="submit">Daftar</button>
+              <div class="hint">At least 8 characters (uppercase, lowercase, numbers, symbols)</div>
+              <input id="registerPassword2" type="password" placeholder="Confirm password" maxlength="72" autocomplete="new-password" required>
+              <button class="primary full" type="submit">Sig Up</button>
             </form>
 
             <p class="center" style="margin-top:15px;">
-              Sudah punya akun?
-              <button id="showLogin" class="text-btn strong" type="button">Masuk</button>
+              Do you already have an account?
+              <button id="showLogin" class="text-btn strong" type="button">Log In</button>
             </p>
           </div>
 
           <!-- RESET -->
           <div id="resetPanel" class="auth-panel hidden">
             <h1>Reset password</h1>
-            <p class="sub">Tautan reset akan dikirim ke email Anda, cek email atau spam.</p>
+            <p class="sub">A reset link will be sent to your email; please check your inbox or spam folder.</p>
 
             <form id="resetForm" novalidate>
               <input id="resetEmail" type="email" placeholder="Email" maxlength="254" autocomplete="email" required>
-              <button class="primary full" type="submit">Kirim tautan</button>
+              <button class="primary full" type="submit">Send link</button>
             </form>
 
-            <button id="backToLogin" class="text-btn" style="margin-top:20px;" type="button">← Kembali Masuk</button>
+            <button id="backToLogin" class="text-btn" style="margin-top:20px;" type="button">← Log in again</button>
           </div>
         </div>
 
@@ -142,15 +142,15 @@
     <section id="verifyView" class="screen hidden verify-screen">
       <div class="verify-card">
         <div class="verify-icon">✉</div>
-        <span class="kicker">VERIFIKASI EMAIL</span>
-        <h1>Periksa email Anda</h1>
+        <span class="kicker">Email verification</span>
+        <h1>Chek Your Email</h1>
         <p id="verifyAddress" class="email-pill">—</p>
-        <p class="sub">Tautan verifikasi telah dikirim. Silakan cek Inbox atau Spam.</p>
+        <p class="sub">A verification link has been sent. Please check your Email Inbox or Spam folder.</p>
         <div id="verifyNotice" class="notice hidden"></div>
         <div class="stack">
-          <button id="checkVerification" class="primary full" type="button">Saya sudah verifikasi</button>
-          <button id="resendVerification" class="secondary full" type="button">Kirim ulang email</button>
-          <button id="verifyLogout" class="text-btn" type="button">Keluar</button>
+          <button id="checkVerification" class="primary full" type="button">I have verified it</button>
+          <button id="resendVerification" class="secondary full" type="button">Resend </button>
+          <button id="verifyLogout" class="text-btn" type="button">Close</button>
         </div>
       </div>
     </section>
@@ -190,8 +190,8 @@
 
         <div id="emptyContacts" class="empty-state">
           <div class="empty-symbol">💬</div>
-          <strong>Belum ada chat</strong>
-          <span>Klik ikon tambah di atas untuk memulai.</span>
+          <strong>No messages yet</strong>
+          <span>Click the (+) icon above to get started</span>
         </div>
 
         <button id="addContactButton" class="hidden" type="button"></button>
@@ -215,7 +215,7 @@
               <img id="peerAvatar" src="img/puki.png" alt="Peer">
               <div class="peer-meta">
                 <strong id="peerName">—</strong>
-                <span id="peerStatus">Email terverifikasi</span>
+                <span id="peerStatus">Verified email</span>
               </div>
             </div>
 
@@ -227,7 +227,7 @@
           <div id="messageList" class="message-list"></div>
 
           <form id="messageForm" class="composer">
-            <button id="emojiButton" class="action-icon" type="button" aria-label="Emoji">😊</button>
+            <button id="emojiButton" class="action-icon" type="button" aria-label="Emoji">🙂</button>
             <input id="messageInput" maxlength="4000" autocomplete="off" placeholder="Ketik pesan">
             <button id="sendButton" class="send-btn bubble-btn" type="submit" title="Kirim">
               <img src="img/send.png" alt="Kirim">
@@ -241,7 +241,7 @@
         <div class="popover-user">
           <img id="menuAvatar" src="img/logo_user.png" alt="">
           <div>
-            <strong id="menuName">Pengguna</strong>
+            <strong id="menuName">User</strong>
             <span id="menuEmail">—</span>
           </div>
         </div>
@@ -261,7 +261,7 @@
     <div id="modalBackdrop" class="modal-backdrop hidden">
       <section class="modal-card" role="dialog" aria-modal="true">
         <header class="modal-head">
-          <h2>Chat Baru</h2>
+          <h2>Pesan Baru</h2>
           <button id="closeContactModal" class="action-icon" type="button" aria-label="Tutup">×</button>
         </header>
 
