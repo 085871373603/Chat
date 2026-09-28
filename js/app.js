@@ -83,7 +83,7 @@ function setView(n) {
 }
 function fbMsg(e) {
   const map = {
-    'auth/invalid-credential': 'Email atau password salah.', 'auth/invalid-email': 'Format email tidak valid.',
+    'auth/invalid-credential': 'Incorrect email or password.', 'auth/invalid-email': 'Format email tidak valid.',
     'auth/email-already-in-use': 'Email sudah terdaftar.', 'auth/weak-password': 'Password terlalu lemah.',
     'auth/too-many-requests': 'Terlalu banyak percobaan. Tunggu beberapa saat.',
     'auth/network-request-failed': 'Jaringan bermasalah.', 'auth/user-not-found': 'Akun tidak ditemukan.',
@@ -256,7 +256,7 @@ async function askNotif() {
 function updateNotifBtn() {
   const b = $('stNotif'); if (!b) return;
   const s = notifState();
-  b.textContent = s === 'granted' ? '🔔 Notifikasi aktif' : s === 'denied' ? '🔕 Diblokir (ubah di pengaturan browser)' : '🔔 Aktifkan notifikasi';
+  b.textContent = s === 'granted' ? '✅️ Notifikasi aktif' : s === 'denied' ? '🔕 Diblokir (ubah di pengaturan browser)' : '🔔 Aktifkan notifikasi';
   b.disabled = s === 'granted' || s === 'denied' || s === 'unsupported';
 }
 async function notify(title, body, uid) {
@@ -534,17 +534,17 @@ function buildUI() {
   const menu = $('accountMenu'), first = $('menuTheme');
   const mk = (id, html, fn) => { const b = el('button'); b.type = 'button'; b.id = id; b.innerHTML = html; b.onclick = () => { closeMenu(); fn(); }; menu.insertBefore(b, first); };
   mk('menuProfile', '👤 <span>Profil</span>', openProfile);
-  mk('menuSettings', '⚙ <span>Pengaturan</span>', openSettings);
-  mk('menuInstall', '⬇ <span>Pasang aplikasi</span>', doInstall);
+  mk('menuSettings', '⚙ <span>General</span>', openSettings);
+  mk('menuInstall', '⬇ <span>Install aplikasi</span>', doInstall);
 
   /* modal pengaturan */
   mkModal('settingsModal', 'Pengaturan', `
-    <p class="st-note">Kirim gambar lewat repositori GitHub Anda sendiri (opsional). Tanpa ini, chat teks tetap berjalan normal. Token hanya disimpan di perangkat ini. Pakai <b>fine-grained token</b> dengan izin <b>Contents: Read and write</b> khusus satu repo. Repo harus <b>publik</b> agar lawan bicara bisa melihat gambar.</p>
-    <label class="field-label" for="ghOwner">Username GitHub</label><input id="ghOwner" autocomplete="off" maxlength="60">
-    <label class="field-label" for="ghRepo">Nama repositori</label><input id="ghRepo" autocomplete="off" maxlength="100">
+    <p class="st-note">Kirim gambar lewat repositori GitHub Anda sendiri (opsional). Tanpa ini, chat teks tetap berjalan normal. Token hanya disimpan di perangkat ini. Pakai <b>fine-grained token</b> dengan izin <b>Contents: Read and write</b> khusus satu repo. Repo harus <b>publik</b></p>
+    <label class="field-label" for="ghOwner">Username Gh</label><input id="ghOwner" autocomplete="off" maxlength="60">
+    <label class="field-label" for="ghRepo">Repositori</label><input id="ghRepo" autocomplete="off" maxlength="100">
     <label class="field-label" for="ghBranch">Branch</label><input id="ghBranch" autocomplete="off" maxlength="60">
     <label class="field-label" for="ghFolder">Folder gambar</label><input id="ghFolder" autocomplete="off" maxlength="60">
-    <label class="field-label" for="ghToken">Token</label><input id="ghToken" type="password" autocomplete="off" maxlength="200">
+    <label class="field-label" for="ghToken">Gh Token</label><input id="ghToken" type="password" autocomplete="off" maxlength="200">
     <div id="ghNotice" class="notice hidden"></div>
     <div class="stack"><button id="ghSave" class="primary full" type="button">Simpan & uji koneksi</button>
     <button id="ghClear" class="secondary full" type="button">Hapus konfigurasi</button>
@@ -601,7 +601,7 @@ function buildUI() {
   att.onclick = () => file.click();
   $('emojiButton')?.after(att);
   const ep = el('div', 'emoji-panel hidden'); ep.id = 'emojiPanel';
-  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅').forEach(x => {
+  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅😺😸😹😻😼😽🙀😿😾🙈🙉🙊').forEach(x => {
     const b = el('button'); b.type = 'button'; b.textContent = x;
     b.onclick = () => { const i = $('messageInput'); i.value += x; i.focus(); };
     ep.append(b);
@@ -612,7 +612,7 @@ function buildUI() {
 
   /* banner pasang aplikasi */
   const bar = el('div', 'install-bar hidden'); bar.id = 'installBar';
-  bar.innerHTML = '<img src="img/icon-192.png" alt=""><div><strong>Pasang aplikasi</strong><span>Buka lebih cepat dari layar utama.</span></div><button class="primary" type="button" id="installGo">Unduh</button><button class="action-icon" type="button" id="installX" aria-label="Tutup">×</button>';
+  bar.innerHTML = '<img src="img/icon-192.png" alt=""><div><strong>Install aplikasi</strong><span>Buka lebih cepat dari layar utama.</span></div><button class="primary" type="button" id="installGo">Install</button><button class="action-icon" type="button" id="installX" aria-label="Tutup">×</button>';
   document.body.append(bar);
   $('installGo').onclick = doInstall;
   $('installX').onclick = () => { S.barHidden = true; updateInstallUI(); };
