@@ -1,5 +1,5 @@
 // Service Worker Arinex: network-first (selalu ambil versi terbaru), cache hanya sebagai cadangan offline.
-const V = 'arinex-v5';
+const V = 'Pigeon-v2.0';
 const SHELL = ['./', 'index.html', 'css/style.css', 'css/extra.css', 'js/app.js', 'manifest.webmanifest', 'img/icon-192.png', 'img/icon-512.png'];
 
 self.addEventListener('install', e => {
