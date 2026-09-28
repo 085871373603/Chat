@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signOut, reload, updateProfile } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import { getDatabase, ref, get, set, update, push, onValue, onChildAdded, query, limitToLast, onDisconnect, serverTimestamp, goOnline } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+import { GH_FIXED_PUBLIC } from "./gh-config.js";
 
 /* ================= FIREBASE (konfigurasi & struktur data TIDAK diubah) ================= */
 const firebaseConfig = {
@@ -159,21 +160,14 @@ function preloadPeers() {
 }
 
 /* ================= GITHUB (opsional, untuk kirim gambar) =================
-   Owner / repo / branch / folder SUDAH TETAP di sini, jadi pengguna aplikasi
-   tidak perlu mengisinya. GANTI NILAI DI BAWAH INI dengan repo Anda yang
-   sebenarnya sebelum memakai fitur kirim gambar. Repo harus PUBLIK.
-   Yang masih diminta ke setiap pengguna hanyalah token pribadi mereka. */
-const GH_FIXED = {
-  owner: 'GANTI_USERNAME_GITHUB',   // contoh: 'arinex'
-  repo: 'GANTI_NAMA_REPO',          // contoh: 'pigeon-media'
-  branch: 'main',
-  folder: 'arinex-chat'
-};
+   Owner/repo/branch/folder diatur di satu tempat: js/gh-config.js.
+   Yang masih diminta ke setiap pengguna hanyalah token pribadi mereka
+   sendiri (dibuat lewat tombol "Request Token" di Pengaturan). */
+const GH_FIXED = GH_FIXED_PUBLIC;
 const GH_KEY = 'arinex_gh_token';
 function ghCfg() {
   const token = ls.get(GH_KEY);
   if (!token) return null;
-  if (GH_FIXED.owner.startsWith('GANTI_') || GH_FIXED.repo.startsWith('GANTI_')) return null;
   return { ...GH_FIXED, token };
 }
 async function compress(file, max = 1280, q = .82) {
@@ -547,19 +541,20 @@ function buildUI() {
   mk('menuInstall', '⬇ <span>Pasang aplikasi</span>', doInstall);
 
   /* modal pengaturan: owner/repo/branch/folder sudah tetap (lihat GH_FIXED),
-     pengguna hanya perlu mengisi token pribadi mereka sendiri. */
+     pengguna hanya perlu membuat & mengisi token pribadi mereka sendiri. */
   mkModal('settingsModal', 'Pengaturan', `
-    <p class="st-note">Kirim gambar lewat repositori: <b id="ghRepoInfo">—</b>. Masukkan token pribadi Anda supaya bisa mengunggah ke repo tersebut. Tanpa token, chat teks tetap berjalan normal. Token hanya disimpan di perangkat ini, tidak dikirim ke server mana pun selain GitHub. Pakai <b>fine-grained token</b> dengan izin <b>Contents: Read and write</b> khusus repo ini.</p>
+    <p class="st-note">Kirim gambar lewat repositori: <b id="ghRepoInfo">—</b>. Buat token pribadi Anda sendiri lewat tombol di bawah, lalu tempel di sini. Tanpa token, chat teks tetap berjalan normal. Token hanya disimpan di perangkat ini, tidak dikirim ke server mana pun selain GitHub.</p>
     <label class="field-label" for="ghToken">Token GitHub</label><input id="ghToken" type="password" autocomplete="off" maxlength="200" placeholder="github_pat_...">
     <div id="ghNotice" class="notice hidden"></div>
-    <div class="stack"><button id="ghSave" class="primary full" type="button">Simpan & uji koneksi</button>
+    <div class="stack">
+    <button id="ghGetToken" class="secondary full" type="button">🔑 Request Token</button>
+    <button id="ghSave" class="primary full" type="button">Simpan & uji koneksi</button>
     <button id="ghClear" class="secondary full" type="button">Hapus token</button>
     <button id="stNotif" class="secondary full" type="button"></button></div>`);
+  $('ghGetToken').onclick = () => window.open('token.html', '_blank', 'noopener');
   $('ghSave').onclick = async () => {
-    if (GH_FIXED.owner.startsWith('GANTI_') || GH_FIXED.repo.startsWith('GANTI_'))
-      return notice($('ghNotice'), 'Repo tujuan belum diatur developer aplikasi ini.', 'error');
     const token = clean($('ghToken').value, 200);
-    if (!token) return notice($('ghNotice'), 'Isi token terlebih dahulu.', 'error');
+    if (!token) return notice($('ghNotice'), 'Isi token terlebih dahulu. Ketuk "Request Token" jika belum punya.', 'error');
     try {
       const r = await waitFor(fetch(`https://api.github.com/repos/${GH_FIXED.owner}/${GH_FIXED.repo}`, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' } }));
       if (!r.ok) throw new Error(r.status === 401 ? 'Token tidak valid.' : 'Repo tidak ditemukan / token tanpa akses.');
