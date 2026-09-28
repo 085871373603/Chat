@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#ed1c24">
+  <link rel="icon" type="image/png" href="img/icon-192.png">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <title>Request Token — Secret Message</title>
+
+  <link rel="stylesheet" href="css/style.css?v=5.0">
+  <link rel="stylesheet" href="css/extra.css?v=5.0">
+  <script>
+    try { document.documentElement.setAttribute("data-theme", localStorage.getItem("arinex_theme") === "dark" ? "dark" : "light"); }
+    catch (e) { document.documentElement.setAttribute("data-theme", "light"); }
+  </script>
+
+  <style>
+    body { display: flex; flex-direction: column; }
+    .top { display: flex; align-items: center; gap: 12px; flex-shrink: 0; z-index: 10;
+      padding: calc(10px + env(safe-area-inset-top)) 14px 10px; background: var(--bg-header); color: var(--text-header); }
+    .back { width: 40px; height: 40px; border: 0; background: none; color: #fff; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; clip-path: var(--alias-circle); }
+    .back:active { background: rgba(255,255,255,.2); }
+    .back svg { width: 26px; height: 26px; }
+    .top strong { font-size: 17px; font-weight: 600; }
+
+    .page { flex: 1; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+      padding: 16px 16px calc(24px + env(safe-area-inset-bottom)); }
+    .wrap { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+    .card { background: var(--bg-panel); padding: 22px 20px; clip-path: var(--alias-16); }
+    .card h2 { font-size: 17px; margin-bottom: 10px; }
+    .card p { color: var(--text-sub); line-height: 1.65; font-size: 14.5px; }
+    .card p + p { margin-top: 10px; }
+
+    .warn { background: rgba(239,83,80,.1); color: var(--danger); padding: 12px 14px; clip-path: var(--alias-8); font-size: 13.5px; line-height: 1.6; }
+    .steps { list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 14px; }
+    .steps li { counter-increment: s; display: flex; gap: 12px; }
+    .steps li::before { content: counter(s); flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--accent);
+      color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .steps b { display: block; font-size: 14.5px; margin-bottom: 3px; color: var(--text-main); }
+    .steps span { font-size: 13.5px; color: var(--text-sub); line-height: 1.55; }
+    code { background: var(--bg-input); padding: 1px 6px; font-size: 13px; }
+
+    .repo-box { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      background: var(--bg-input); padding: 12px 14px; clip-path: var(--alias-8); font-size: 14px; }
+    .repo-box b { font-weight: 700; }
+    .copybtn { border: 0; background: var(--bg-panel); border: 1px solid var(--border); padding: 6px 10px; font-size: 12px; cursor: pointer; clip-path: var(--alias-8); flex-shrink: 0; }
+
+    .primary.full { width: 100%; }
+  </style>
+</head>
+<body>
+
+  <header class="top">
+    <button class="back" type="button" aria-label="Kembali" onclick="window.close(); if(!window.closed) location.href='index.html';">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <strong>Request Token GitHub</strong>
+  </header>
+
+  <main class="page">
+    <div class="wrap">
+
+      <div class="warn">
+        Halaman ini <b>tidak menyimpan atau membagikan token milik siapa pun</b>. Token adalah kunci pribadi ke akun GitHub Anda — jangan pernah menempelkannya di tempat lain selain kolom "Token GitHub" di aplikasi ini, dan jangan bagikan ke orang lain.
+      </div>
+
+      <section class="card">
+        <h2>Kenapa perlu token?</h2>
+        <p>Token ini dipakai aplikasi untuk mengunggah gambar chat ke repositori GitHub berikut atas nama Anda. Setiap orang yang ingin mengirim gambar membuat tokennya masing-masing — token tidak pernah dibagikan atau disimpan oleh siapa pun selain Anda sendiri.</p>
+        <div class="repo-box">
+          <span>Repositori tujuan: <b id="repoTarget">memuat…</b></span>
+          <button class="copybtn" id="copyRepo" type="button">Salin</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Langkah membuat token</h2>
+        <ol class="steps">
+          <li><div><b>Buka halaman pembuatan token GitHub</b><span>Ketuk tombol hijau di bawah. Anda akan diminta login ke akun GitHub jika belum login.</span></div></li>
+          <li><div><b>Isi nama token</b><span>Bebas, misalnya <code>arinex-chat</code>, supaya mudah dikenali nanti.</span></div></li>
+          <li><div><b>Pilih "Only select repositories"</b><span>Lalu pilih repo yang tertera di atas. Jangan beri akses ke seluruh repo Anda.</span></div></li>
+          <li><div><b>Atur izin "Contents" menjadi "Read and write"</b><span>Cari di bagian <i>Repository permissions</i>. Izin lain biarkan default.</span></div></li>
+          <li><div><b>Klik "Generate token"</b><span>Token muncul sekali saja, formatnya <code>github_pat_...</code>. Salin sekarang juga.</span></div></li>
+          <li><div><b>Tempel di aplikasi</b><span>Kembali ke Pengaturan → kolom Token GitHub, tempel, lalu ketuk "Simpan & uji koneksi".</span></div></li>
+        </ol>
+      </section>
+
+      <button class="primary full" id="openGithub" type="button">Buka Halaman Buat Token GitHub ↗</button>
+      <button class="secondary full" type="button" onclick="window.close(); if(!window.closed) location.href='index.html';">Kembali ke aplikasi</button>
+    </div>
+  </main>
+
+  <script type="module">
+    import { GH_FIXED_PUBLIC } from './js/gh-config.js';
+    document.getElementById('repoTarget').textContent = `${GH_FIXED_PUBLIC.owner}/${GH_FIXED_PUBLIC.repo}`;
+    document.getElementById('copyRepo').onclick = async () => {
+      try { await navigator.clipboard.writeText(`${GH_FIXED_PUBLIC.owner}/${GH_FIXED_PUBLIC.repo}`); }
+      catch (e) {}
+    };
+    document.getElementById('openGithub').onclick = () => {
+      window.open('https://github.com/settings/personal-access-tokens/new', '_blank', 'noopener');
+    };
+  </script>
+</body>
+</html>
