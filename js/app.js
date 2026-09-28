@@ -1,2832 +1,636 @@
-import {
-    initializeApp
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signOut, reload, updateProfile } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getDatabase, ref, get, set, update, push, onValue, onChildAdded, query, limitToLast, onDisconnect, serverTimestamp, goOnline } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
 
-import {
-    getAuth,
-    setPersistence,
-    browserLocalPersistence,
-    onAuthStateChanged,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    sendEmailVerification,
-    sendPasswordResetEmail,
-    signOut,
-    reload,
-    updateProfile
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-
-import {
-    getDatabase,
-    ref,
-    get,
-    set,
-    update,
-    push,
-    onValue,
-    off,
-    onDisconnect,
-    serverTimestamp,
-    goOnline
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
-
-
-/* =========================================================
-   FIREBASE
-   ========================================================= */
-
+/* ================= FIREBASE (konfigurasi & struktur data TIDAK diubah) ================= */
 const firebaseConfig = {
-    apiKey: "AIzaSyCFsAAGRTW0et7_pQnxhLtkGR174kRqikg",
-    authDomain: "arinexservice.firebaseapp.com",
-    databaseURL: "https://arinexservice-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "arinexservice",
-    storageBucket: "arinexservice.firebasestorage.app",
-    messagingSenderId: "780762123532",
-    appId: "1:780762123532:web:2c3b8a374eba5871490d29",
-    measurementId: "G-SB9MXMZVCF"
+  apiKey: "AIzaSyCFsAAGRTW0et7_pQnxhLtkGR174kRqikg",
+  authDomain: "arinexservice.firebaseapp.com",
+  databaseURL: "https://arinexservice-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "arinexservice",
+  storageBucket: "arinexservice.firebasestorage.app",
+  messagingSenderId: "780762123532",
+  appId: "1:780762123532:web:2c3b8a374eba5871490d29",
+  measurementId: "G-SB9MXMZVCF"
 };
-
 const app = initializeApp(firebaseConfig);
-
 const auth = getAuth(app);
-
 const db = getDatabase(app);
+const persistenceReady = setPersistence(auth, browserLocalPersistence);
 
-const persistenceReady =
-    setPersistence(
-        auth,
-        browserLocalPersistence
-    );
-
-
-/* =========================================================
-   HELPERS
-   ========================================================= */
-
-const $ = id =>
-    document.getElementById(id);
-
-
-let currentUser = null;
-let myProfile = null;
-let contacts = {};
-let activeUid = null;
-let activeChatId = null;
-
-let contactsUnsub = null;
-let messagesUnsub = null;
-let presenceDisconnect = null;
-
-let toastTimer = null;
-let verifyCooldownUntil = 0;
-let authBusy = false;
-
-
-const views = {
-    auth: $('authView'),
-    verify: $('verifyView'),
-    chat: $('chatView')
+/* ================= HELPER ================= */
+const $ = id => document.getElementById(id);
+const el = (t, c) => { const e = document.createElement(t); if (c) e.className = c; return e; };
+const ls = {
+  get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  del: k => { try { localStorage.removeItem(k); } catch {} }
 };
+const S = { user: null, profile: null, contacts: {}, peers: {}, activeUid: null, chatId: null,
+  offContacts: null, offMsgs: null, watch: {}, unread: {}, last: {}, initUid: null,
+  install: null, presenceCancel: null, newPhoto: null, barHidden: false };
+const views = { auth: $('authView'), verify: $('verifyView'), chat: $('chatView') };
+const norm = v => String(v ?? '').trim().toLowerCase();
+const clean = (v, m = 4000) => String(v ?? '').trim().slice(0, m);
+const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(norm(v));
+const isStrong = v => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/.test(v);
+const isMobile = () => matchMedia('(max-width: 768px)').matches;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const chatIdFor = (a, b) => [a, b].sort().join('__');
+const formatTime = ts => new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit' }).format(new Date(Number(ts) || Date.now()));
+const preview = t => String(t || '').startsWith('[img]') ? '📷 Foto' : clean(t, 60);
+const GH_IMG = /^https:\/\/raw\.githubusercontent\.com\//;
 
-
-const normalizeEmail = value =>
-    String(value ?? '')
-        .trim()
-        .toLowerCase();
-
-
-const safeText = (
-    value,
-    max = 4000
-) =>
-    String(value ?? '')
-        .trim()
-        .slice(0, max);
-
-
-const isEmail = value =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        .test(normalizeEmail(value));
-
-
-const isStrongPassword = value =>
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/
-        .test(value);
-
-
-/* =========================================================
-   THEME SYSTEM
-   ========================================================= */
-
-const THEME_KEY = 'arinex_theme';
-
-
-function getTheme() {
-
-    const saved =
-        localStorage.getItem(THEME_KEY);
-
-    if (
-        saved === 'dark' ||
-        saved === 'light'
-    ) {
-        return saved;
-    }
-
-    return 'light';
+async function sha256Hex(v) {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
+  return Array.from(new Uint8Array(d)).map(x => x.toString(16).padStart(2, '0')).join('');
+}
+async function waitFor(p, ms = 15000) {
+  let t;
+  const to = new Promise((_, rej) => { t = setTimeout(() => rej(new Error('Waktu koneksi habis. Coba lagi.')), ms); });
+  try { return await Promise.race([p, to]); } finally { clearTimeout(t); }
 }
 
-
-function applyTheme(theme) {
-
-    const selected =
-        theme === 'dark'
-            ? 'dark'
-            : 'light';
-
-    document.documentElement
-        .setAttribute(
-            'data-theme',
-            selected
-        );
-
-    document.body?.setAttribute(
-        'data-theme',
-        selected
-    );
-
-    localStorage.setItem(
-        THEME_KEY,
-        selected
-    );
-
-    updateThemeMenu(selected);
-
-    return selected;
+/* ================= TEMA ================= */
+const THEME = 'arinex_theme';
+const getTheme = () => ls.get(THEME) === 'dark' ? 'dark' : 'light';
+function applyTheme(t) {
+  t = t === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  ls.set(THEME, t);
+  const m = $('menuTheme');
+  if (m) m.innerHTML = `${t === 'dark' ? '☀' : '☾'} <span>${t === 'dark' ? 'Mode terang' : 'Mode gelap'}</span>`;
 }
-
-
-function toggleTheme() {
-
-    const current =
-        getTheme();
-
-    const next =
-        current === 'dark'
-            ? 'light'
-            : 'dark';
-
-    applyTheme(next);
-
-    toast(
-        next === 'dark'
-            ? 'Mode gelap aktif.'
-            : 'Mode terang aktif.'
-    );
-}
-
-
-function updateThemeMenu(theme) {
-
-    const menu =
-        $('menuTheme');
-
-    if (!menu) return;
-
-    const span =
-        menu.querySelector('span');
-
-    if (!span) return;
-
-    span.textContent =
-        theme === 'dark'
-            ? 'Mode terang'
-            : 'Mode gelap';
-
-    if (menu.firstChild && menu.firstChild.nodeType === 3) {
-        menu.firstChild.textContent =
-            theme === 'dark'
-                ? '☀ '
-                : '☾ ';
-    } else {
-        menu.insertBefore(
-            document.createTextNode(theme === 'dark' ? '☀ ' : '☾ '),
-            menu.firstChild
-        );
-    }
-}
-
-
-/*
-   Terapkan tema saat JS selesai dimuat.
-   index.html juga sudah menerapkannya sebelum CSS
-   sehingga perpindahan tema tidak berkedip.
-*/
-
 applyTheme(getTheme());
+addEventListener('storage', e => { if (e.key === THEME) applyTheme(e.newValue); });
 
-document.addEventListener('DOMContentLoaded', () => {
-    applyTheme(getTheme());
+/* ================= UI DASAR ================= */
+let toastTimer;
+function toast(msg) {
+  const t = $('toast'); if (!t) return;
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+function notice(e, msg, type = 'info') {
+  if (!e) return;
+  e.textContent = msg; e.classList.remove('hidden', 'error');
+  if (type === 'error') e.classList.add('error');
+}
+const clearNotice = e => e?.classList.add('hidden');
+function setView(n) {
+  Object.values(views).forEach(v => v?.classList.add('hidden'));
+  views[n]?.classList.remove('hidden');
+}
+function fbMsg(e) {
+  const map = {
+    'auth/invalid-credential': 'Email atau password salah.', 'auth/invalid-email': 'Format email tidak valid.',
+    'auth/email-already-in-use': 'Email sudah terdaftar.', 'auth/weak-password': 'Password terlalu lemah.',
+    'auth/too-many-requests': 'Terlalu banyak percobaan. Tunggu beberapa saat.',
+    'auth/network-request-failed': 'Jaringan bermasalah.', 'auth/user-not-found': 'Akun tidak ditemukan.',
+    'auth/wrong-password': 'Email atau password salah.', 'auth/user-disabled': 'Akun ini telah dinonaktifkan.',
+    'auth/expired-action-code': 'Tautan sudah kedaluwarsa.', 'auth/invalid-action-code': 'Tautan tidak valid atau sudah digunakan.'
+  };
+  return map[e?.code] || e?.message || 'Terjadi kesalahan jaringan/sistem.';
+}
+function lightbox(src) {
+  const d = el('div', 'lightbox'), i = new Image();
+  i.src = src; d.append(i); d.onclick = () => d.remove(); document.body.append(d);
+}
+function beep() {
+  try {
+    const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain();
+    o.connect(g); g.connect(a.destination); o.frequency.value = 880;
+    g.gain.setValueAtTime(.08, a.currentTime); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + .25);
+    o.start(); o.stop(a.currentTime + .25);
+  } catch {}
+}
+function fitViewport() {
+  document.documentElement.style.setProperty('--app-h', (window.visualViewport?.height || innerHeight) + 'px');
+}
+fitViewport();
+visualViewport?.addEventListener('resize', fitViewport);
+addEventListener('resize', fitViewport);
+
+/* ================= PROFIL ================= */
+async function refreshUser(mustVerify = false) {
+  if (!auth.currentUser) throw new Error('Sesi tidak ditemukan.');
+  await reload(auth.currentUser);
+  await auth.currentUser.getIdToken(true);
+  S.user = auth.currentUser;
+  if (mustVerify && !S.user.emailVerified) throw new Error('Email belum terverifikasi.');
+  return S.user;
+}
+function renderMe() {
+  const u = S.user;
+  const name = clean(S.profile?.displayName, 40) || clean(u?.displayName, 40) || norm(u?.email).split('@')[0] || 'Pengguna';
+  ['myName', 'menuName'].forEach(i => { if ($(i)) $(i).textContent = name; });
+  ['myEmail', 'menuEmail'].forEach(i => { if ($(i)) $(i).textContent = u?.email || ''; });
+  if (u?.photoURL && GH_IMG.test(u.photoURL)) ['myAvatar', 'menuAvatar'].forEach(i => { if ($(i)) $(i).src = u.photoURL; });
+  return name;
+}
+async function ensureProfile(user) {
+  await refreshUser(true);
+  const email = norm(user.email), hash = await sha256Hex(email), uid = user.uid;
+  const [us, ps, is] = await Promise.all([
+    get(ref(db, `users/${uid}`)), get(ref(db, `publicProfiles/${uid}`)), get(ref(db, `emailIndex/${hash}`))
+  ].map(p => waitFor(p)));
+  const old = us.exists() ? us.val() : {};
+  const name = clean(user.displayName, 40) || clean(old.displayName, 40) || email.split('@')[0] || 'Pengguna';
+  const now = Date.now(), u = {};
+  if (!us.exists()) u[`users/${uid}`] = { displayName: name, createdAt: now, updatedAt: now };
+  else { if (old.displayName !== name) u[`users/${uid}/displayName`] = name; u[`users/${uid}/updatedAt`] = now; }
+  if (!ps.exists()) u[`publicProfiles/${uid}`] = { displayName: name, updatedAt: now };
+  else if (ps.val()?.displayName !== name) { u[`publicProfiles/${uid}/displayName`] = name; u[`publicProfiles/${uid}/updatedAt`] = now; }
+  if (!is.exists()) u[`emailIndex/${hash}`] = uid;
+  if (Object.keys(u).length) await waitFor(update(ref(db), u));
+  S.profile = { ...old, displayName: name, updatedAt: now, createdAt: old.createdAt || now };
+  renderMe();
+}
+const loading = new Set();
+const avatarOf = uid => { const p = S.peers[uid]?.photoURL; return p && GH_IMG.test(p) ? p : 'img/puki.png'; };
+function preloadPeers() {
+  for (const uid of Object.keys(S.contacts)) {
+    if (S.peers[uid] || loading.has(uid)) continue;
+    loading.add(uid);
+    get(ref(db, `publicProfiles/${uid}`)).then(s => { S.peers[uid] = s.exists() ? s.val() : {}; })
+      .catch(() => { S.peers[uid] = {}; })
+      .finally(() => { loading.delete(uid); renderContacts(); });
+  }
+}
+
+/* ================= GITHUB (opsional, untuk kirim gambar) ================= */
+const GH_KEY = 'arinex_gh';
+function ghCfg() {
+  try {
+    const g = JSON.parse(ls.get(GH_KEY) || 'null');
+    return g && g.owner && g.repo && g.token ? g : null;
+  } catch { return null; }
+}
+async function compress(file, max = 1280, q = .82) {
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return new Promise(r => c.toBlob(r, 'image/jpeg', q));
+}
+const toB64 = blob => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result.split(',')[1]); f.onerror = rej; f.readAsDataURL(blob); });
+async function uploadToGithub(file, sub, max = 1280) {
+  const g = ghCfg(); if (!g) throw new Error('GitHub belum diatur.');
+  let blob; try { blob = await compress(file, max); } catch { throw new Error('File bukan gambar yang didukung.'); }
+  const path = `${g.folder || 'arinex-chat'}/${sub}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
+  const r = await waitFor(fetch(`https://api.github.com/repos/${g.owner}/${g.repo}/contents/${path}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${g.token}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: 'upload', content: await toB64(blob), branch: g.branch || 'main' })
+  }), 45000);
+  if (!r.ok) throw new Error(r.status === 401 ? 'Token GitHub tidak valid.' : r.status === 403 || r.status === 404 ? 'Repo tidak ditemukan / token tidak punya izin.' : `Upload gagal (${r.status}).`);
+  return `https://raw.githubusercontent.com/${g.owner}/${g.repo}/${g.branch || 'main'}/${path}`;
+}
+
+/* ================= KONTAK ================= */
+function renderContacts() {
+  const term = norm($('contactSearch')?.value), list = $('contactList'); if (!list) return;
+  list.innerHTML = '';
+  const arr = Object.entries(S.contacts)
+    .map(([uid, v]) => ({ uid, ...v, displayName: S.peers[uid]?.displayName || v.displayName }))
+    .filter(c => !term || norm(c.email).includes(term) || String(c.displayName || '').toLowerCase().includes(term))
+    .sort((a, b) => (S.last[b.uid]?.ts || 0) - (S.last[a.uid]?.ts || 0));
+  $('emptyContacts')?.classList.toggle('hidden', arr.length > 0);
+  for (const c of arr) {
+    const b = el('button', 'contact-item' + (c.uid === S.activeUid ? ' active' : '')); b.type = 'button';
+    const img = new Image(); img.src = avatarOf(c.uid); img.alt = '';
+    const copy = el('div', 'contact-copy'), st = el('strong'), sp = el('span');
+    st.textContent = c.displayName || 'Pengguna';
+    sp.textContent = S.last[c.uid]?.text || c.email || 'Kontak';
+    copy.append(st, sp); b.append(img, copy);
+    if (S.unread[c.uid]) { const bd = el('span', 'badge'); bd.textContent = S.unread[c.uid]; b.append(bd); }
+    b.onclick = () => openConversation(c.uid);
+    list.append(b);
+  }
+  preloadPeers();
+}
+function updateBadge() {
+  const n = Object.values(S.unread).reduce((a, b) => a + b, 0);
+  document.title = (n ? `(${n}) ` : '') + 'SECRET MESSAGE';
+  try { n ? navigator.setAppBadge?.(n) : navigator.clearAppBadge?.(); } catch {}
+}
+function listenContacts() {
+  S.offContacts?.();
+  S.offContacts = onValue(ref(db, `contacts/${S.user.uid}`), s => {
+    S.contacts = s.exists() ? s.val() : {};
+    renderContacts(); watchChats();
+  }, () => toast('Kontak tidak dapat dimuat.'));
+}
+async function ensureChat(peerUid) {
+  const id = chatIdFor(S.user.uid, peerUid), r = ref(db, `chats/${id}`);
+  if ((await get(r)).exists()) return id;
+  await set(r, { type: 'direct', createdAt: Date.now(), participants: { [S.user.uid]: true, [peerUid]: true } });
+  return id;
+}
+async function addContactByEmail(value) {
+  goOnline(db); await refreshUser(true);
+  const email = norm(value);
+  if (!isEmail(email)) throw new Error('Masukkan email yang valid.');
+  if (email === norm(S.user.email)) throw new Error('Tidak dapat menambahkan diri sendiri.');
+  const idx = await waitFor(get(ref(db, `emailIndex/${await sha256Hex(email)}`)));
+  if (!idx.exists()) throw new Error('Kontak tidak ditemukan. Pastikan akun tersebut sudah terdaftar.');
+  const uid = String(idx.val());
+  if (!uid || uid === S.user.uid) throw new Error('Kontak tidak valid.');
+  const ps = await waitFor(get(ref(db, `publicProfiles/${uid}`)));
+  if (!ps.exists()) throw new Error('Profil belum siap. Minta pengguna tersebut login kembali.');
+  const data = { displayName: clean(ps.val()?.displayName, 40) || 'Pengguna', email, addedAt: Date.now() };
+  await waitFor(set(ref(db, `contacts/${S.user.uid}/${uid}`), data));
+  await ensureChat(uid);
+  return { uid, ...data };
+}
+
+/* ================= NOTIFIKASI ================= */
+function notifState() { return 'Notification' in window ? Notification.permission : 'unsupported'; }
+async function askNotif() {
+  if (notifState() === 'unsupported') return toast('Browser ini tidak mendukung notifikasi.');
+  const p = await Notification.requestPermission();
+  toast(p === 'granted' ? 'Notifikasi aktif.' : 'Notifikasi tidak diizinkan.');
+  updateNotifBtn();
+}
+function updateNotifBtn() {
+  const b = $('stNotif'); if (!b) return;
+  const s = notifState();
+  b.textContent = s === 'granted' ? '🔔 Notifikasi aktif' : s === 'denied' ? '🔕 Diblokir (ubah di pengaturan browser)' : '🔔 Aktifkan notifikasi';
+  b.disabled = s === 'granted' || s === 'denied' || s === 'unsupported';
+}
+async function notify(title, body, uid) {
+  beep(); try { navigator.vibrate?.(120); } catch {}
+  if (notifState() !== 'granted') return;
+  const opt = { body, icon: 'img/icon-192.png', badge: 'img/icon-192.png', tag: 'chat-' + uid, renotify: true, data: { uid } };
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration();
+    reg ? reg.showNotification(title, opt) : new Notification(title, opt);
+  } catch {}
+}
+function watchChats() {
+  for (const uid of Object.keys(S.contacts)) {
+    if (S.watch[uid]) continue;
+    const t0 = Date.now(), id = chatIdFor(S.user.uid, uid);
+    S.watch[uid] = onChildAdded(query(ref(db, `chats/${id}/messages`), limitToLast(1)), s => {
+      const m = s.val(); if (!m) return;
+      const ts = Number(m.createdAt) || Date.now(), mine = m.senderId === S.user.uid;
+      S.last[uid] = { text: (mine ? 'Anda: ' : '') + preview(m.text), ts };
+      if (!mine && ts > t0 && !(S.activeUid === uid && !document.hidden)) {
+        S.unread[uid] = (S.unread[uid] || 0) + 1;
+        notify(S.peers[uid]?.displayName || S.contacts[uid]?.displayName || 'Pesan baru', preview(m.text), uid);
+      }
+      renderContacts(); updateBadge();
+    }, () => {});
+  }
+}
+
+/* ================= PERCAKAPAN ================= */
+async function openConversation(uid) {
+  const c = S.contacts[uid]; if (!c) return;
+  S.activeUid = uid; S.chatId = chatIdFor(S.user.uid, uid); S.unread[uid] = 0; updateBadge();
+  const p = S.peers[uid] || {};
+  $('peerName').textContent = p.displayName || c.displayName || 'Pengguna';
+  $('peerStatus').textContent = c.email || '';
+  $('peerAvatar').src = avatarOf(uid);
+  $('welcomeConversation').classList.add('hidden');
+  $('activeConversation').classList.remove('hidden');
+  views.chat.classList.add('mobile-open');
+  if (isMobile() && !history.state?.chat) history.pushState({ chat: 1 }, '');
+  renderContacts(); listenMessages();
+}
+function listenMessages() {
+  S.offMsgs?.(); const chatId = S.chatId;
+  S.offMsgs = onValue(query(ref(db, `chats/${chatId}/messages`), limitToLast(200)), s => {
+    if (chatId !== S.chatId) return;
+    const list = $('messageList');
+    const stick = !list.children.length || list.scrollHeight - list.scrollTop - list.clientHeight < 140;
+    list.innerHTML = '';
+    const arr = Object.entries(s.val() || {}).map(([id, m]) => ({ id, ...m })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    const fmtDay = ts => { const d = new Date(Number(ts) || Date.now()); return d.toDateString() === new Date().toDateString() ? 'Hari ini' : new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }).format(d); };
+    let day = '';
+    for (const m of arr) {
+      const d = new Date(Number(m.createdAt) || Date.now()).toDateString();
+      if (d !== day) { day = d; const sep = el('div', 'day-sep'); sep.textContent = fmtDay(m.createdAt); list.append(sep); }
+      const row = el('div', 'message-row' + (m.senderId === S.user.uid ? ' mine' : '')), bub = el('div', 'message-bubble');
+      const t = String(m.text || '');
+      if (t.startsWith('[img]') && GH_IMG.test(t.slice(5))) {
+        const im = el('img', 'msg-img'); im.loading = 'lazy'; im.alt = 'Foto'; im.src = t.slice(5);
+        im.onclick = () => lightbox(im.src);
+        im.onload = () => { if (stick) list.scrollTop = list.scrollHeight; };
+        bub.append(im);
+      } else { const x = el('div', 'message-text'); x.textContent = t; bub.append(x); }
+      const meta = el('div', 'message-meta'); meta.textContent = formatTime(m.createdAt);
+      bub.append(meta); row.append(bub); list.append(row);
+    }
+    if (stick || arr.at(-1)?.senderId === S.user.uid) requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
+    if (!document.hidden && S.unread[S.activeUid]) { S.unread[S.activeUid] = 0; renderContacts(); updateBadge(); }
+  }, () => toast('Pesan tidak dapat dimuat.'));
+}
+async function pushMsg(text) {
+  await waitFor(set(push(ref(db, `chats/${S.chatId}/messages`)), { senderId: S.user.uid, text, createdAt: serverTimestamp() }));
+}
+async function sendMessage() {
+  const i = $('messageInput'), text = clean(i.value);
+  if (!text || !S.chatId || !S.user) return;
+  i.value = '';
+  try { await pushMsg(text); } catch (e) { i.value = text; console.error(e); toast('Pesan gagal dikirim.'); }
+  i.focus();
+}
+async function sendImage(file) {
+  if (!file || !S.chatId) return;
+  if (!ghCfg()) { toast('Atur GitHub di Pengaturan untuk mengirim gambar.'); openSettings(); return; }
+  toast('Mengunggah gambar…');
+  try { await pushMsg('[img]' + await uploadToGithub(file, 'chat')); toast('Gambar terkirim.'); }
+  catch (e) { toast(e.message || 'Gagal mengirim gambar.'); }
+}
+function clearActive() {
+  S.offMsgs?.(); S.offMsgs = null; S.activeUid = null; S.chatId = null;
+  views.chat?.classList.remove('mobile-open');
+  $('activeConversation')?.classList.add('hidden');
+  $('welcomeConversation')?.classList.remove('hidden');
+  $('emojiPanel')?.classList.add('hidden');
+  if ($('messageList')) $('messageList').innerHTML = '';
+  renderContacts();
+}
+
+/* ================= PRESENCE & SESI ================= */
+function setPresence(on) {
+  if (!S.user?.emailVerified) return;
+  const r = ref(db, `presence/${S.user.uid}`);
+  set(r, { online: on, lastSeen: serverTimestamp() }).catch(() => {});
+  if (on) {
+    S.presenceCancel?.();
+    const d = onDisconnect(r);
+    S.presenceCancel = () => d.cancel().catch(() => {});
+    d.set({ online: false, lastSeen: serverTimestamp() }).catch(() => {});
+  }
+}
+function cleanup() {
+  S.offContacts?.(); S.offMsgs?.();
+  Object.values(S.watch).forEach(f => f?.());
+  S.presenceCancel?.();
+  Object.assign(S, { offContacts: null, offMsgs: null, watch: {}, presenceCancel: null, initUid: null, unread: {}, last: {}, peers: {} });
+  updateBadge();
+}
+async function initChat(user) {
+  if (!user.emailVerified) throw new Error('Email belum terverifikasi.');
+  if (S.initUid === user.uid) return;
+  S.initUid = user.uid;
+  try { await waitFor(ensureProfile(user), 20000); setView('chat'); listenContacts(); setPresence(true); updateInstallUI(); }
+  catch (e) { S.initUid = null; throw e; }
+}
+async function logout() {
+  closeMenu(); setPresence(false); cleanup();
+  try { await signOut(auth); } catch { toast('Gagal keluar. Coba lagi.'); }
+}
+function actionCodeSettings() { return { url: location.origin + location.pathname, handleCodeInApp: false }; }
+let cooldown = 0;
+async function sendVerification() {
+  if (!S.user) return;
+  const remain = cooldown - Date.now();
+  if (remain > 0) return notice($('verifyNotice'), `Tunggu ${Math.ceil(remain / 1000)} detik.`, 'error');
+  try {
+    await sendEmailVerification(S.user, actionCodeSettings());
+    cooldown = Date.now() + 60000;
+    notice($('verifyNotice'), 'Email verifikasi dikirim. Periksa Inbox/Spam.');
+  } catch (e) { notice($('verifyNotice'), fbMsg(e), 'error'); }
+}
+function switchAuth(p) {
+  ['login', 'register', 'reset'].forEach(n => $(n + 'Panel')?.classList.toggle('hidden', p !== n));
+  clearNotice($('authNotice'));
+}
+
+/* ================= FORM AUTH ================= */
+let authBusy = false;
+async function guarded(e, label, fn) {
+  e.preventDefault(); if (authBusy) return;
+  const btn = e.submitter, old = btn.textContent;
+  authBusy = true; btn.disabled = true; btn.textContent = label;
+  try { await fn(); } catch (err) { notice($('authNotice'), fbMsg(err), 'error'); }
+  finally { authBusy = false; btn.disabled = false; btn.textContent = old; }
+}
+$('loginForm')?.addEventListener('submit', e => guarded(e, 'Memeriksa…', async () => {
+  const email = norm($('loginEmail').value), pass = $('loginPassword').value;
+  if (!isEmail(email) || !pass) throw new Error('Email dan password tidak valid.');
+  await waitFor(signInWithEmailAndPassword(auth, email, pass));
+  $('loginForm').reset(); // sisanya ditangani onAuthStateChanged
+}));
+$('registerForm')?.addEventListener('submit', e => guarded(e, 'Membuat…', async () => {
+  const name = clean($('registerName').value, 40), email = norm($('registerEmail').value);
+  const pw = $('registerPassword').value, pw2 = $('registerPassword2').value;
+  if (!name || !isEmail(email)) throw new Error('Nama dan email wajib diisi.');
+  if (!isStrong(pw)) throw new Error('Password terlalu lemah.');
+  if (pw !== pw2) throw new Error('Konfirmasi password tidak sama.');
+  const cred = await createUserWithEmailAndPassword(auth, email, pw);
+  await updateProfile(cred.user, { displayName: name });
+  S.user = cred.user;
+  await sendEmailVerification(cred.user, actionCodeSettings());
+  $('registerForm').reset(); $('verifyAddress').textContent = email; setView('verify');
+  notice($('verifyNotice'), 'Akun dibuat. Silakan verifikasi email Anda.');
+}));
+$('resetForm')?.addEventListener('submit', e => guarded(e, 'Mengirim…', async () => {
+  const email = norm($('resetEmail').value);
+  if (!isEmail(email)) throw new Error('Email tidak valid.');
+  await sendPasswordResetEmail(auth, email, actionCodeSettings());
+  notice($('authNotice'), 'Tautan reset dikirim.'); $('resetForm').reset();
+}));
+$('showRegister')?.addEventListener('click', () => switchAuth('register'));
+$('showLogin')?.addEventListener('click', () => switchAuth('login'));
+$('showReset')?.addEventListener('click', () => switchAuth('reset'));
+$('backToLogin')?.addEventListener('click', () => switchAuth('login'));
+$('resendVerification')?.addEventListener('click', sendVerification);
+$('verifyLogout')?.addEventListener('click', logout);
+$('checkVerification')?.addEventListener('click', async () => {
+  try {
+    await refreshUser(false);
+    if (!S.user.emailVerified) return notice($('verifyNotice'), 'Belum terverifikasi. Cek email Anda.', 'error');
+    await initChat(S.user);
+  } catch (e) { notice($('verifyNotice'), fbMsg(e), 'error'); }
+});
+document.querySelectorAll('.eye').forEach(b => b.addEventListener('click', () => {
+  const i = $(b.dataset.target); if (i) i.type = i.type === 'password' ? 'text' : 'password';
+}));
+
+onAuthStateChanged(auth, async user => {
+  await persistenceReady.catch(() => {});
+  S.user = user;
+  if (!user) { cleanup(); S.profile = null; S.contacts = {}; clearActive(); setView('auth'); switchAuth('login'); return; }
+  try {
+    await refreshUser(false);
+    if (!S.user.emailVerified) { $('verifyAddress').textContent = S.user.email || ''; setView('verify'); return; }
+    await initChat(S.user);
+  } catch (e) { cleanup(); setView('auth'); switchAuth('login'); notice($('authNotice'), fbMsg(e), 'error'); }
 });
 
+/* ================= MENU AKUN ================= */
+function closeMenu() { const m = $('accountMenu'); m?.classList.add('hidden'); m?.setAttribute('aria-hidden', 'true'); }
+$('accountButton')?.addEventListener('click', e => {
+  e.stopPropagation();
+  const m = $('accountMenu'), h = m.classList.toggle('hidden');
+  m.setAttribute('aria-hidden', String(h)); renderMe(); applyTheme(getTheme());
+});
+$('accountMenu')?.addEventListener('click', e => e.stopPropagation());
+document.addEventListener('click', closeMenu);
+$('menuTheme')?.addEventListener('click', () => { const n = getTheme() === 'dark' ? 'light' : 'dark'; applyTheme(n); toast(n === 'dark' ? 'Mode gelap aktif.' : 'Mode terang aktif.'); closeMenu(); });
+$('menuLogout')?.addEventListener('click', logout);
 
-/*
-   Jika localStorage berubah dari tab/window lain,
-   halaman ini ikut berubah.
-*/
+/* ================= CHAT BARU ================= */
+$('newChatButton')?.addEventListener('click', () => {
+  $('modalBackdrop')?.classList.remove('hidden');
+  $('contactEmail').value = ''; clearNotice($('contactModalNotice'));
+  setTimeout(() => $('contactEmail')?.focus(), 30);
+});
+$('closeContactModal')?.addEventListener('click', () => $('modalBackdrop')?.classList.add('hidden'));
+$('modalBackdrop')?.addEventListener('click', e => { if (e.target === $('modalBackdrop')) $('modalBackdrop').classList.add('hidden'); });
+$('contactForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const b = e.submitter, old = b.textContent; b.disabled = true; b.textContent = 'Mencari…';
+  try {
+    const r = await addContactByEmail($('contactEmail').value);
+    S.contacts[r.uid] = { displayName: r.displayName, email: r.email, addedAt: r.addedAt };
+    $('modalBackdrop').classList.add('hidden'); toast(`${r.displayName} ditambahkan.`);
+    await openConversation(r.uid);
+  } catch (err) { notice($('contactModalNotice'), err?.message || fbMsg(err), 'error'); }
+  finally { b.disabled = false; b.textContent = old; }
+});
+$('contactSearch')?.addEventListener('input', renderContacts);
+$('messageForm')?.addEventListener('submit', e => { e.preventDefault(); sendMessage(); });
+$('chatMenuButton')?.addEventListener('click', () => toast('Info chat belum tersedia'));
+$('backToContacts')?.addEventListener('click', () => history.state?.chat ? history.back() : clearActive());
+addEventListener('popstate', () => { if (S.activeUid) clearActive(); });
 
-window.addEventListener(
-    'storage',
-    event => {
-
-        if (event.key !== THEME_KEY) return;
-
-        applyTheme(
-            event.newValue === 'dark'
-                ? 'dark'
-                : 'light'
-        );
-
-    }
-);
-
-
-/* =========================================================
-   VIEW
-   ========================================================= */
-
-function setView(name) {
-
-    Object
-        .values(views)
-        .forEach(view =>
-            view?.classList.add('hidden')
-        );
-
-    views[name]
-        ?.classList.remove('hidden');
+/* ================= UI TAMBAHAN (disuntik lewat JS, index.html tidak perlu diubah banyak) ================= */
+function mkModal(id, title, html) {
+  const b = el('div', 'modal-backdrop hidden'); b.id = id;
+  b.innerHTML = `<section class="modal-card" role="dialog" aria-modal="true"><header class="modal-head"><h2>${title}</h2><button class="action-icon" type="button" data-close aria-label="Tutup">×</button></header>${html}</section>`;
+  b.addEventListener('click', e => { if (e.target === b || e.target.hasAttribute('data-close')) b.classList.add('hidden'); });
+  ($('app') || document.body).append(b); return b;
 }
-
-
-/* =========================================================
-   NOTICE
-   ========================================================= */
-
-function notice(
-    el,
-    msg,
-    type = 'info'
-) {
-
-    if (!el) return;
-
-    el.textContent = msg;
-
-    el.classList.remove(
-        'hidden',
-        'error'
-    );
-
-    if (type === 'error') {
-        el.classList.add('error');
-    }
+const openSettings = () => { fillSettings(); updateNotifBtn(); $('settingsModal').classList.remove('hidden'); };
+function fillSettings() {
+  const g = ghCfg() || {};
+  $('ghOwner').value = g.owner || ''; $('ghRepo').value = g.repo || '';
+  $('ghBranch').value = g.branch || 'main'; $('ghFolder').value = g.folder || 'arinex-chat'; $('ghToken').value = g.token || '';
 }
-
-
-function clearNotice(el) {
-
-    el?.classList.add('hidden');
-
+function openProfile() {
+  S.newPhoto = null;
+  $('pfName').value = renderMe(); $('pfEmail').textContent = S.user?.email || '';
+  $('pfAvatar').src = (S.user?.photoURL && GH_IMG.test(S.user.photoURL)) ? S.user.photoURL : 'img/logo_user.png';
+  $('profileModal').classList.remove('hidden');
 }
-
-
-/* =========================================================
-   TOAST
-   ========================================================= */
-
-function toast(msg) {
-
-    const el =
-        $('toast');
-
-    if (!el) return;
-
-    el.textContent =
-        msg;
-
-    el.classList.add('show');
-
-    clearTimeout(
-        toastTimer
-    );
-
-    toastTimer =
-        setTimeout(
-            () =>
-                el.classList.remove('show'),
-            2800
-        );
+async function doInstall() {
+  if (S.install) { S.install.prompt(); await S.install.userChoice.catch(() => {}); S.install = null; updateInstallUI(); return; }
+  if (/iphone|ipad|ipod/i.test(navigator.userAgent)) toast('Safari: tombol Bagikan → Tambahkan ke Layar Utama.');
+  else toast('Buka menu browser ⋮ lalu pilih "Instal aplikasi" / "Tambahkan ke layar utama".');
 }
-
-
-/* =========================================================
-   FIREBASE MESSAGE
-   ========================================================= */
-
-function firebaseMessage(e) {
-
-    const code =
-        e?.code || '';
-
-    const map = {
-
-        'auth/invalid-credential':
-            'Email atau password salah.',
-
-        'auth/invalid-email':
-            'Format email tidak valid.',
-
-        'auth/email-already-in-use':
-            'Email sudah terdaftar.',
-
-        'auth/weak-password':
-            'Password terlalu lemah.',
-
-        'auth/too-many-requests':
-            'Terlalu banyak percobaan. Tunggu beberapa saat.',
-
-        'auth/network-request-failed':
-            'Jaringan bermasalah.',
-
-        'auth/user-not-found':
-            'Akun tidak ditemukan.',
-
-        'auth/wrong-password':
-            'Email atau password salah.',
-
-        'auth/user-disabled':
-            'Akun ini telah dinonaktifkan.',
-
-        'auth/expired-action-code':
-            'Tautan sudah kedaluwarsa.',
-
-        'auth/invalid-action-code':
-            'Tautan tidak valid atau sudah digunakan.'
-    };
-
-    return (
-        map[code] ||
-        e?.message ||
-        'Terjadi kesalahan jaringan/sistem.'
-    );
+function updateInstallUI() {
+  const need = !isStandalone();
+  $('menuInstall')?.classList.toggle('hidden', !need);
+  $('installBar')?.classList.toggle('hidden', !need || S.barHidden);
 }
+function buildUI() {
+  /* menu */
+  const menu = $('accountMenu'), first = $('menuTheme');
+  const mk = (id, html, fn) => { const b = el('button'); b.type = 'button'; b.id = id; b.innerHTML = html; b.onclick = () => { closeMenu(); fn(); }; menu.insertBefore(b, first); };
+  mk('menuProfile', '👤 <span>Profil</span>', openProfile);
+  mk('menuSettings', '⚙ <span>Pengaturan</span>', openSettings);
+  mk('menuInstall', '⬇ <span>Pasang aplikasi</span>', doInstall);
 
-
-/* =========================================================
-   WAIT FOR
-   ========================================================= */
-
-async function waitFor(
-    promise,
-    ms = 15000
-) {
-
-    let timer;
-
-    const timeout =
-        new Promise(
-            (_, reject) => {
-
-                timer =
-                    setTimeout(
-                        () =>
-                            reject(
-                                new Error(
-                                    'Waktu koneksi habis. Coba lagi.'
-                                )
-                            ),
-                        ms
-                    );
-
-            }
-        );
-
+  /* modal pengaturan */
+  mkModal('settingsModal', 'Pengaturan', `
+    <p class="st-note">Kirim gambar lewat repositori GitHub Anda sendiri (opsional). Tanpa ini, chat teks tetap berjalan normal. Token hanya disimpan di perangkat ini. Pakai <b>fine-grained token</b> dengan izin <b>Contents: Read and write</b> khusus satu repo. Repo harus <b>publik</b> agar lawan bicara bisa melihat gambar.</p>
+    <label class="field-label" for="ghOwner">Username GitHub</label><input id="ghOwner" autocomplete="off" maxlength="60">
+    <label class="field-label" for="ghRepo">Nama repositori</label><input id="ghRepo" autocomplete="off" maxlength="100">
+    <label class="field-label" for="ghBranch">Branch</label><input id="ghBranch" autocomplete="off" maxlength="60">
+    <label class="field-label" for="ghFolder">Folder gambar</label><input id="ghFolder" autocomplete="off" maxlength="60">
+    <label class="field-label" for="ghToken">Token</label><input id="ghToken" type="password" autocomplete="off" maxlength="200">
+    <div id="ghNotice" class="notice hidden"></div>
+    <div class="stack"><button id="ghSave" class="primary full" type="button">Simpan & uji koneksi</button>
+    <button id="ghClear" class="secondary full" type="button">Hapus konfigurasi</button>
+    <button id="stNotif" class="secondary full" type="button"></button></div>`);
+  $('ghSave').onclick = async () => {
+    const g = { owner: clean($('ghOwner').value, 60), repo: clean($('ghRepo').value, 100), branch: clean($('ghBranch').value, 60) || 'main', folder: clean($('ghFolder').value, 60).replace(/^\/+|\/+$/g, '') || 'arinex-chat', token: clean($('ghToken').value, 200) };
+    if (!/^[\w.-]+$/.test(g.owner) || !/^[\w.-]+$/.test(g.repo) || !g.token) return notice($('ghNotice'), 'Isi username, repo, dan token dengan benar.', 'error');
     try {
-
-        return await Promise.race([
-            promise,
-            timeout
-        ]);
-
-    } finally {
-
-        clearTimeout(timer);
-
-    }
-}
-
-
-/* =========================================================
-   REFRESH USER
-   ========================================================= */
-
-async function refreshUser(
-    forceVerified = false
-) {
-
-    if (!auth.currentUser) {
-        throw new Error(
-            'Sesi tidak ditemukan.'
-        );
-    }
-
-    await reload(
-        auth.currentUser
-    );
-
-    await auth.currentUser
-        .getIdToken(true);
-
-    currentUser =
-        auth.currentUser;
-
-    if (
-        forceVerified &&
-        !currentUser.emailVerified
-    ) {
-        throw new Error(
-            'Email belum terverifikasi.'
-        );
-    }
-
-    return currentUser;
-}
-
-
-/* =========================================================
-   RENDER USER
-   ========================================================= */
-
-function renderMe() {
-
-    const name =
-        safeText(
-            myProfile?.displayName,
-            40
-        ) ||
-
-        safeText(
-            currentUser?.displayName,
-            40
-        ) ||
-
-        normalizeEmail(
-            currentUser?.email
-        ).split('@')[0] ||
-
-        'Pengguna';
-
-
-    const email =
-        currentUser?.email || '';
-
-
-    [
-        'myName',
-        'menuName'
-    ].forEach(id => {
-
-        if ($(id)) {
-            $(id).textContent =
-                name;
-        }
-
-    });
-
-
-    [
-        'myEmail',
-        'menuEmail'
-    ].forEach(id => {
-
-        if ($(id)) {
-            $(id).textContent =
-                email;
-        }
-
-    });
-
-
-    return name;
-}
-
-
-/* =========================================================
-   PROFILE
-   ========================================================= */
-
-async function sha256Hex(value) {
-
-    const bytes =
-        new TextEncoder()
-            .encode(value);
-
-    const digest =
-        await crypto.subtle.digest(
-            'SHA-256',
-            bytes
-        );
-
-    return Array
-        .from(
-            new Uint8Array(digest)
-        )
-        .map(
-            x =>
-                x.toString(16)
-                    .padStart(2, '0')
-        )
-        .join('');
-}
-
-
-async function ensureProfile(user) {
-
-    await refreshUser(true);
-
-    const email =
-        normalizeEmail(user.email);
-
-    const hash =
-        await sha256Hex(email);
-
-
-    const uref =
-        ref(
-            db,
-            `users/${user.uid}`
-        );
-
-    const pref =
-        ref(
-            db,
-            `publicProfiles/${user.uid}`
-        );
-
-    const iref =
-        ref(
-            db,
-            `emailIndex/${hash}`
-        );
-
-
-    const [
-        us,
-        ps,
-        is
-    ] =
-        await Promise.all([
-
-            waitFor(get(uref)),
-
-            waitFor(get(pref)),
-
-            waitFor(get(iref))
-
-        ]);
-
-
-    const old =
-        us.exists()
-            ? us.val()
-            : {};
-
-
-    const name =
-        safeText(
-            user.displayName,
-            40
-        ) ||
-
-        safeText(
-            old.displayName,
-            40
-        ) ||
-
-        email.split('@')[0] ||
-
-        'Pengguna';
-
-
-    const now =
-        Date.now();
-
-
-    const updates = {};
-
-
-    if (!us.exists()) {
-
-        updates[
-            `users/${user.uid}`
-        ] = {
-
-            displayName: name,
-
-            createdAt: now,
-
-            updatedAt: now
-
-        };
-
-    } else {
-
-        if (
-            old.displayName !== name
-        ) {
-
-            updates[
-                `users/${user.uid}/displayName`
-            ] = name;
-
-        }
-
-        updates[
-            `users/${user.uid}/updatedAt`
-        ] = now;
-
-    }
-
-
-    if (
-        !ps.exists() ||
-        ps.val()?.displayName !== name
-    ) {
-
-        updates[
-            `publicProfiles/${user.uid}`
-        ] = {
-
-            displayName: name,
-
-            updatedAt: now
-
-        };
-
-    }
-
-
-    if (!is.exists()) {
-
-        updates[
-            `emailIndex/${hash}`
-        ] = user.uid;
-
-    }
-
-
-    if (
-        Object.keys(updates).length
-    ) {
-
-        await waitFor(
-            update(
-                ref(db),
-                updates
-            )
-        );
-
-    }
-
-
-    myProfile = {
-
-        ...(us.exists()
-            ? old
-            : {}),
-
-        displayName: name,
-
-        updatedAt: now,
-
-        createdAt:
-            old.createdAt || now
-
-    };
-
-
-    renderMe();
-
-}
-
-
-/* =========================================================
-   AUTH PANEL
-   ========================================================= */
-
-function switchAuth(panel) {
-
-    $('loginPanel')
-        ?.classList
-        .toggle(
-            'hidden',
-            panel !== 'login'
-        );
-
-
-    $('registerPanel')
-        ?.classList
-        .toggle(
-            'hidden',
-            panel !== 'register'
-        );
-
-
-    $('resetPanel')
-        ?.classList
-        .toggle(
-            'hidden',
-            panel !== 'reset'
-        );
-
-
-    clearNotice(
-        $('authNotice')
-    );
-
-}
-
-
-/* =========================================================
-   VERIFICATION
-   ========================================================= */
-
-function actionCodeSettings() {
-
-    return {
-
-        url:
-            window.location.origin +
-            window.location.pathname,
-
-        handleCodeInApp:
-            false
-
-    };
-
-}
-
-
-async function sendVerification() {
-
-    if (!currentUser) return;
-
-
-    const remain =
-        verifyCooldownUntil -
-        Date.now();
-
-
-    if (remain > 0) {
-
-        notice(
-            $('verifyNotice'),
-            `Tunggu ${Math.ceil(remain / 1000)} detik.`,
-            'error'
-        );
-
-        return;
-    }
-
-
+      const r = await waitFor(fetch(`https://api.github.com/repos/${g.owner}/${g.repo}`, { headers: { Authorization: `Bearer ${g.token}`, Accept: 'application/vnd.github+json' } }));
+      if (!r.ok) throw new Error(r.status === 401 ? 'Token tidak valid.' : 'Repo tidak ditemukan / token tanpa akses.');
+      const j = await r.json();
+      ls.set(GH_KEY, JSON.stringify(g));
+      notice($('ghNotice'), j.private ? 'Tersimpan, tapi repo PRIVAT: lawan bicara tidak bisa melihat gambar. Jadikan publik.' : 'Tersimpan. Pengiriman gambar aktif.', j.private ? 'error' : 'info');
+    } catch (e) { notice($('ghNotice'), e.message, 'error'); }
+  };
+  $('ghClear').onclick = () => { ls.del(GH_KEY); fillSettings(); notice($('ghNotice'), 'Konfigurasi dihapus.'); };
+  $('stNotif').onclick = askNotif;
+
+  /* modal profil */
+  mkModal('profileModal', 'Profil', `
+    <div class="pf-avatar"><img id="pfAvatar" src="img/logo_user.png" alt="Foto profil"><span>Ketuk foto untuk mengganti</span></div>
+    <input id="pfFile" type="file" accept="image/*" class="hidden">
+    <label class="field-label" for="pfName">Nama</label><input id="pfName" maxlength="40" autocomplete="off">
+    <label class="field-label">Email</label><p id="pfEmail" class="st-note selectable"></p>
+    <div id="pfNotice" class="notice hidden"></div>
+    <button id="pfSave" class="primary full" type="button">Simpan profil</button>`);
+  $('pfAvatar').onclick = () => { if (!ghCfg()) { toast('Foto profil butuh GitHub di Pengaturan.'); return; } $('pfFile').click(); };
+  $('pfFile').onchange = async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    toast('Mengunggah foto…');
+    try { S.newPhoto = await uploadToGithub(f, 'avatar', 320); $('pfAvatar').src = S.newPhoto; toast('Foto siap. Tekan Simpan.'); }
+    catch (err) { toast(err.message); }
+  };
+  $('pfSave').onclick = async () => {
+    const name = clean($('pfName').value, 40), uid = S.user.uid;
+    if (!name) return notice($('pfNotice'), 'Nama tidak boleh kosong.', 'error');
+    const b = $('pfSave'); b.disabled = true;
     try {
+      const props = { displayName: name }; if (S.newPhoto) props.photoURL = S.newPhoto;
+      await updateProfile(auth.currentUser, props);
+      const now = Date.now();
+      await waitFor(update(ref(db), { [`users/${uid}/displayName`]: name, [`users/${uid}/updatedAt`]: now, [`publicProfiles/${uid}/displayName`]: name, [`publicProfiles/${uid}/updatedAt`]: now }));
+      if (S.newPhoto) set(ref(db, `publicProfiles/${uid}/photoURL`), S.newPhoto).catch(() => {});
+      S.user = auth.currentUser; S.profile = { ...S.profile, displayName: name };
+      renderMe(); $('profileModal').classList.add('hidden'); toast('Profil disimpan.');
+    } catch (e) { notice($('pfNotice'), fbMsg(e), 'error'); } finally { b.disabled = false; }
+  };
 
-        await sendEmailVerification(
-            currentUser,
-            actionCodeSettings()
-        );
+  /* tombol lampiran + emoji */
+  const file = el('input'); file.type = 'file'; file.accept = 'image/*'; file.className = 'hidden';
+  file.onchange = e => { const f = e.target.files[0]; e.target.value = ''; sendImage(f); };
+  document.body.append(file);
+  const att = el('button', 'action-icon'); att.type = 'button'; att.id = 'attachButton'; att.textContent = '📎'; att.setAttribute('aria-label', 'Kirim gambar');
+  att.onclick = () => file.click();
+  $('emojiButton')?.after(att);
+  const ep = el('div', 'emoji-panel hidden'); ep.id = 'emojiPanel';
+  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅').forEach(x => {
+    const b = el('button'); b.type = 'button'; b.textContent = x;
+    b.onclick = () => { const i = $('messageInput'); i.value += x; i.focus(); };
+    ep.append(b);
+  });
+  $('activeConversation')?.append(ep);
+  $('emojiButton')?.addEventListener('click', () => ep.classList.toggle('hidden'));
+  $('messageInput')?.addEventListener('focus', () => { ep.classList.add('hidden'); setTimeout(() => scrollTo(0, 0), 50); });
 
-
-        verifyCooldownUntil =
-            Date.now() + 60000;
-
-
-        notice(
-            $('verifyNotice'),
-            'Email verifikasi dikirim. Periksa Inbox/Spam.'
-        );
-
-    } catch (e) {
-
-        notice(
-            $('verifyNotice'),
-            firebaseMessage(e),
-            'error'
-        );
-
-    }
-
+  /* banner pasang aplikasi */
+  const bar = el('div', 'install-bar hidden'); bar.id = 'installBar';
+  bar.innerHTML = '<img src="img/icon-192.png" alt=""><div><strong>Pasang aplikasi</strong><span>Buka lebih cepat dari layar utama.</span></div><button class="primary" type="button" id="installGo">Unduh</button><button class="action-icon" type="button" id="installX" aria-label="Tutup">×</button>';
+  document.body.append(bar);
+  $('installGo').onclick = doInstall;
+  $('installX').onclick = () => { S.barHidden = true; updateInstallUI(); };
+  updateInstallUI(); applyTheme(getTheme());
 }
+buildUI();
 
-
-/* =========================================================
-   CHAT ID
-   ========================================================= */
-
-function chatIdFor(a, b) {
-
-    return [
-        a,
-        b
-    ]
-        .sort()
-        .join('__');
-
+/* ================= PWA, SERVICE WORKER, VISIBILITY ================= */
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.install = e; updateInstallUI(); });
+addEventListener('appinstalled', () => { S.install = null; updateInstallUI(); toast('Aplikasi terpasang.'); });
+matchMedia('(display-mode: standalone)').addEventListener?.('change', updateInstallUI);
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.addEventListener('message', e => { const u = e.data?.openUid; if (u && S.contacts[u]) openConversation(u); });
 }
-
-
-function formatTime(ts) {
-
-    return new Intl.DateTimeFormat(
-        'id-ID',
-        {
-            hour: '2-digit',
-            minute: '2-digit'
-        }
-    )
-        .format(
-            new Date(
-                Number(ts) ||
-                Date.now()
-            )
-        );
-
-}
-
-
-/* =========================================================
-   MENU
-   ========================================================= */
-
-function closeMenu() {
-
-    const menu =
-        $('accountMenu');
-
-    if (!menu) return;
-
-    menu.classList.add(
-        'hidden'
-    );
-
-    menu.setAttribute(
-        'aria-hidden',
-        'true'
-    );
-
-}
-
-
-function toggleMenu() {
-
-    const menu =
-        $('accountMenu');
-
-    if (!menu) return;
-
-    const hidden =
-        menu.classList.toggle(
-            'hidden'
-        );
-
-
-    menu.setAttribute(
-        'aria-hidden',
-        String(hidden)
-    );
-
-
-    renderMe();
-
-    updateThemeMenu(
-        getTheme()
-    );
-
-}
-
-
-/* =========================================================
-   CONTACTS
-   ========================================================= */
-
-function renderContacts() {
-
-    const term =
-        normalizeEmail(
-            $('contactSearch')?.value
-        );
-
-
-    const list =
-        $('contactList');
-
-    if (!list) return;
-
-
-    list.innerHTML = '';
-
-
-    const arr =
-        Object
-            .entries(contacts)
-            .map(
-                ([uid, value]) => ({
-                    uid,
-                    ...value
-                })
-            )
-            .filter(
-                contact =>
-                    !term ||
-
-                    normalizeEmail(
-                        contact.email
-                    ).includes(term) ||
-
-                    String(
-                        contact.displayName || ''
-                    )
-                        .toLowerCase()
-                        .includes(term)
-            );
-
-
-    $('emptyContacts')
-        ?.classList
-        .toggle(
-            'hidden',
-            arr.length > 0
-        );
-
-
-    for (const contact of arr) {
-
-        const button =
-            document.createElement(
-                'button'
-            );
-
-        button.className =
-            `contact-item ${
-                contact.uid === activeUid
-                    ? 'active'
-                    : ''
-            }`;
-
-        button.type =
-            'button';
-
-
-        const img =
-            document.createElement(
-                'img'
-            );
-
-        img.src =
-            'img/puki.png';
-
-        img.alt =
-            '';
-
-
-        const copy =
-            document.createElement(
-                'div'
-            );
-
-        copy.className =
-            'contact-copy';
-
-
-        const strong =
-            document.createElement(
-                'strong'
-            );
-
-        strong.textContent =
-            contact.displayName ||
-            'Pengguna';
-
-
-        const span =
-            document.createElement(
-                'span'
-            );
-
-        span.textContent =
-            contact.email ||
-            'Kontak';
-
-
-        copy.append(
-            strong,
-            span
-        );
-
-
-        button.append(
-            img,
-            copy
-        );
-
-
-        button.addEventListener(
-            'click',
-            () =>
-                openConversation(
-                    contact.uid
-                )
-        );
-
-
-        list.appendChild(
-            button
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   LISTEN CONTACTS
-   ========================================================= */
-
-function listenContacts() {
-
-    if (
-        contactsUnsub &&
-        currentUser?.uid
-    ) {
-
-        off(
-            ref(
-                db,
-                `contacts/${currentUser.uid}`
-            ),
-            'value',
-            contactsUnsub
-        );
-
-    }
-
-
-    const contactRef =
-        ref(
-            db,
-            `contacts/${currentUser.uid}`
-        );
-
-
-    contactsUnsub =
-        onValue(
-            contactRef,
-            snapshot => {
-
-                contacts =
-                    snapshot.exists()
-                        ? snapshot.val()
-                        : {};
-
-
-                renderContacts();
-
-            },
-            error => {
-
-                console.error(error);
-
-                toast(
-                    'Kontak tidak dapat dimuat.'
-                );
-
-            }
-        );
-
-}
-
-
-/* =========================================================
-   CHAT
-   ========================================================= */
-
-async function ensureChat(peerUid) {
-
-    const id =
-        chatIdFor(
-            currentUser.uid,
-            peerUid
-        );
-
-
-    const chatRef =
-        ref(
-            db,
-            `chats/${id}`
-        );
-
-
-    const snapshot =
-        await get(chatRef);
-
-
-    if (
-        snapshot.exists()
-    ) {
-        return id;
-    }
-
-
-    await set(
-        chatRef,
-        {
-
-            type: 'direct',
-
-            createdAt: Date.now(),
-
-            participants: {
-
-                [currentUser.uid]:
-                    true,
-
-                [peerUid]:
-                    true
-
-            }
-
-        }
-    );
-
-
-    return id;
-}
-
-
-/* =========================================================
-   ADD CONTACT
-   ========================================================= */
-
-async function addContactByEmail(
-    value
-) {
-
-    goOnline(db);
-
-    await refreshUser(true);
-
-
-    const email =
-        normalizeEmail(value);
-
-
-    if (!isEmail(email)) {
-
-        throw new Error(
-            'Masukkan email yang valid.'
-        );
-
-    }
-
-
-    if (
-        email ===
-        normalizeEmail(
-            currentUser.email
-        )
-    ) {
-
-        throw new Error(
-            'Tidak dapat menambahkan diri sendiri.'
-        );
-
-    }
-
-
-    const hash =
-        await sha256Hex(email);
-
-
-    const indexSnapshot =
-        await waitFor(
-            get(
-                ref(
-                    db,
-                    `emailIndex/${hash}`
-                )
-            )
-        );
-
-
-    if (
-        !indexSnapshot.exists()
-    ) {
-
-        throw new Error(
-            'Kontak tidak ditemukan. Pastikan akun tersebut sudah terdaftar.'
-        );
-
-    }
-
-
-    const uid =
-        String(
-            indexSnapshot.val()
-        );
-
-
-    if (
-        !uid ||
-        uid === currentUser.uid
-    ) {
-
-        throw new Error(
-            'Kontak tidak valid.'
-        );
-
-    }
-
-
-    const profileSnapshot =
-        await waitFor(
-            get(
-                ref(
-                    db,
-                    `publicProfiles/${uid}`
-                )
-            )
-        );
-
-
-    if (
-        !profileSnapshot.exists()
-    ) {
-
-        throw new Error(
-            'Profil belum siap. Minta pengguna tersebut login kembali.'
-        );
-
-    }
-
-
-    const data = {
-
-        displayName:
-            safeText(
-                profileSnapshot.val()
-                    ?.displayName,
-                40
-            ) ||
-            'Pengguna',
-
-        email,
-
-        addedAt:
-            Date.now()
-
-    };
-
-
-    await waitFor(
-        set(
-            ref(
-                db,
-                `contacts/${currentUser.uid}/${uid}`
-            ),
-            data
-        )
-    );
-
-
-    await ensureChat(uid);
-
-
-    return {
-        uid,
-        ...data
-    };
-
-}
-
-
-/* =========================================================
-   OPEN CONVERSATION
-   ========================================================= */
-
-async function openConversation(
-    uid
-) {
-
-    const contact =
-        contacts[uid];
-
-
-    if (!contact) return;
-
-
-    activeUid =
-        uid;
-
-
-    activeChatId =
-        chatIdFor(
-            currentUser.uid,
-            uid
-        );
-
-
-    if ($('peerName')) {
-
-        $('peerName').textContent =
-            contact.displayName ||
-            'Pengguna';
-
-    }
-
-
-    if ($('peerStatus')) {
-
-        $('peerStatus').textContent =
-            contact.email ||
-            'Email terverifikasi';
-
-    }
-
-
-    $('welcomeConversation')
-        ?.classList
-        .add('hidden');
-
-
-    $('activeConversation')
-        ?.classList
-        .remove('hidden');
-
-
-    views.chat
-        ?.classList
-        .add('mobile-open');
-
-
-    renderContacts();
-
-    listenMessages();
-
-}
-
-
-/* =========================================================
-   LISTEN MESSAGES
-   ========================================================= */
-
-function listenMessages() {
-
-    if (
-        messagesUnsub &&
-        activeChatId
-    ) {
-
-        off(
-            ref(
-                db,
-                `chats/${activeChatId}/messages`
-            ),
-            'value',
-            messagesUnsub
-        );
-
-    }
-
-
-    const messageRef =
-        ref(
-            db,
-            `chats/${activeChatId}/messages`
-        );
-
-
-    messagesUnsub =
-        onValue(
-            messageRef,
-            snapshot => {
-
-                const list =
-                    $('messageList');
-
-                if (!list) return;
-
-
-                list.innerHTML = '';
-
-
-                const data =
-                    snapshot.exists()
-                        ? snapshot.val()
-                        : {};
-
-
-                const messages =
-                    Object
-                        .entries(data)
-                        .map(
-                            ([id, message]) => ({
-                                id,
-                                ...message
-                            })
-                        )
-                        .sort(
-                            (a, b) =>
-                                (a.createdAt || 0) -
-                                (b.createdAt || 0)
-                        );
-
-
-                for (
-                    const message
-                    of messages
-                ) {
-
-                    const row =
-                        document.createElement(
-                            'div'
-                        );
-
-
-                    row.className =
-                        `message-row ${
-                            message.senderId ===
-                            currentUser.uid
-                                ? 'mine'
-                                : ''
-                        }`;
-
-
-                    const bubble =
-                        document.createElement(
-                            'div'
-                        );
-
-                    bubble.className =
-                        'message-bubble';
-
-
-                    const text =
-                        document.createElement(
-                            'div'
-                        );
-
-                    text.className =
-                        'message-text';
-
-
-                    text.textContent =
-                        message.text ||
-                        '';
-
-
-                    const meta =
-                        document.createElement(
-                            'div'
-                        );
-
-                    meta.className =
-                        'message-meta';
-
-
-                    meta.textContent =
-                        formatTime(
-                            message.createdAt
-                        );
-
-
-                    bubble.append(
-                        text,
-                        meta
-                    );
-
-
-                    row.appendChild(
-                        bubble
-                    );
-
-
-                    list.appendChild(
-                        row
-                    );
-
-                }
-
-
-                requestAnimationFrame(
-                    () => {
-
-                        list.scrollTop =
-                            list.scrollHeight;
-
-                    }
-                );
-
-            }
-        );
-
-}
-
-
-/* =========================================================
-   SEND MESSAGE
-   ========================================================= */
-
-async function sendMessage() {
-
-    const input =
-        $('messageInput');
-
-
-    const text =
-        safeText(
-            input?.value,
-            4000
-        );
-
-
-    if (
-        !text ||
-        !activeChatId ||
-        !currentUser
-    ) {
-        return;
-    }
-
-
-    const old =
-        input.value;
-
-
-    input.value =
-        '';
-
-
-    try {
-
-        const messageRef =
-            push(
-                ref(
-                    db,
-                    `chats/${activeChatId}/messages`
-                )
-            );
-
-
-        await waitFor(
-            set(
-                messageRef,
-                {
-
-                    senderId:
-                        currentUser.uid,
-
-                    text,
-
-                    createdAt:
-                        serverTimestamp()
-
-                }
-            )
-        );
-
-    } catch (e) {
-
-        input.value =
-            old;
-
-        console.error(e);
-
-        toast(
-            'Pesan gagal dikirim.'
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   CLEAR ACTIVE CHAT
-   ========================================================= */
-
-function clearActive() {
-
-    if (
-        messagesUnsub &&
-        activeChatId
-    ) {
-
-        off(
-            ref(
-                db,
-                `chats/${activeChatId}/messages`
-            ),
-            'value',
-            messagesUnsub
-        );
-
-    }
-
-
-    messagesUnsub =
-        null;
-
-    activeUid =
-        null;
-
-    activeChatId =
-        null;
-
-
-    views.chat
-        ?.classList
-        .remove('mobile-open');
-
-
-    $('activeConversation')
-        ?.classList
-        .add('hidden');
-
-
-    $('welcomeConversation')
-        ?.classList
-        .remove('hidden');
-
-
-    if ($('messageList')) {
-
-        $('messageList').innerHTML =
-            '';
-
-    }
-
-
-    renderContacts();
-
-}
-
-
-/* =========================================================
-   PRESENCE
-   ========================================================= */
-
-function setPresence(
-    online
-) {
-
-    if (
-        !currentUser?.emailVerified
-    ) {
-        return;
-    }
-
-
-    const presenceRef =
-        ref(
-            db,
-            `presence/${currentUser.uid}`
-        );
-
-
-    if (online) {
-
-        set(
-            presenceRef,
-            {
-
-                online: true,
-
-                lastSeen:
-                    serverTimestamp()
-
-            }
-        )
-        .catch(() => {});
-
-
-        presenceDisconnect
-            ?.cancel?.();
-
-
-        presenceDisconnect =
-            onDisconnect(
-                presenceRef
-            );
-
-
-        presenceDisconnect
-            .set({
-
-                online: false,
-
-                lastSeen:
-                    serverTimestamp()
-
-            })
-            .catch(() => {});
-
-
-    } else {
-
-        set(
-            presenceRef,
-            {
-
-                online: false,
-
-                lastSeen:
-                    serverTimestamp()
-
-            }
-        )
-        .catch(() => {});
-
-    }
-
-}
-
-
-/* =========================================================
-   CLEANUP
-   ========================================================= */
-
-function cleanup() {
-
-    if (
-        contactsUnsub &&
-        currentUser?.uid
-    ) {
-
-        off(
-            ref(
-                db,
-                `contacts/${currentUser.uid}`
-            ),
-            'value',
-            contactsUnsub
-        );
-
-    }
-
-
-    if (
-        messagesUnsub &&
-        activeChatId
-    ) {
-
-        off(
-            ref(
-                db,
-                `chats/${activeChatId}/messages`
-            ),
-            'value',
-            messagesUnsub
-        );
-
-    }
-
-
-    contactsUnsub =
-        null;
-
-    messagesUnsub =
-        null;
-
-
-    presenceDisconnect
-        ?.cancel?.();
-
-
-    presenceDisconnect =
-        null;
-
-}
-
-
-/* =========================================================
-   INITIALIZE CHAT
-   ========================================================= */
-
-async function initializeChat(
-    user
-) {
-
-    if (
-        !user.emailVerified
-    ) {
-
-        throw new Error(
-            'Email belum terverifikasi.'
-        );
-
-    }
-
-
-    await ensureProfile(user);
-
-
-    setView('chat');
-
-
-    listenContacts();
-
-
-    setPresence(true);
-
-}
-
-
-/* =========================================================
-   LOGOUT
-   ========================================================= */
-
-async function logout() {
-
-    closeMenu();
-
-    setPresence(false);
-
-    cleanup();
-
-
-    try {
-
-        await signOut(auth);
-
-    } catch (e) {
-
-        toast(
-            'Gagal keluar. Coba lagi.'
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   LOGIN
-   ========================================================= */
-
-$('loginForm')
-    ?.addEventListener(
-        'submit',
-        async e => {
-
-            e.preventDefault();
-
-
-            if (authBusy) return;
-
-
-            const email =
-                normalizeEmail(
-                    $('loginEmail').value
-                );
-
-
-            const pass =
-                $('loginPassword').value;
-
-
-            if (
-                !isEmail(email) ||
-                !pass
-            ) {
-
-                return notice(
-                    $('authNotice'),
-                    'Email dan password tidak valid.',
-                    'error'
-                );
-
-            }
-
-
-            authBusy =
-                true;
-
-
-            const button =
-                e.submitter;
-
-
-            button.disabled =
-                true;
-
-
-            button.textContent =
-                'Memeriksa…';
-
-
-            try {
-
-                const credential =
-                    await waitFor(
-                        signInWithEmailAndPassword(
-                            auth,
-                            email,
-                            pass
-                        ),
-                        15000
-                    );
-
-
-                currentUser =
-                    credential.user;
-
-
-                await refreshUser(false);
-
-
-                if (
-                    !currentUser.emailVerified
-                ) {
-
-                    $('verifyAddress')
-                        .textContent =
-                        currentUser.email;
-
-
-                    setView('verify');
-
-
-                    notice(
-                        $('verifyNotice'),
-                        'Login berhasil. Verifikasi email Anda.',
-                        'error'
-                    );
-
-
-                    return;
-                }
-
-
-                await waitFor(
-                    initializeChat(
-                        currentUser
-                    ),
-                    15000
-                );
-
-
-                $('loginForm')
-                    .reset();
-
-
-            } catch (err) {
-
-                notice(
-                    $('authNotice'),
-                    firebaseMessage(err),
-                    'error'
-                );
-
-            } finally {
-
-                authBusy =
-                    false;
-
-                button.disabled =
-                    false;
-
-                button.textContent =
-                    'Masuk';
-
-            }
-
-        }
-    );
-
-
-/* =========================================================
-   REGISTER
-   ========================================================= */
-
-$('registerForm')
-    ?.addEventListener(
-        'submit',
-        async e => {
-
-            e.preventDefault();
-
-
-            if (authBusy) return;
-
-
-            const name =
-                safeText(
-                    $('registerName').value,
-                    40
-                );
-
-
-            const email =
-                normalizeEmail(
-                    $('registerEmail').value
-                );
-
-
-            const password =
-                $('registerPassword').value;
-
-
-            const password2 =
-                $('registerPassword2').value;
-
-
-            if (
-                !name ||
-                !isEmail(email)
-            ) {
-
-                return notice(
-                    $('authNotice'),
-                    'Nama dan email wajib diisi.',
-                    'error'
-                );
-
-            }
-
-
-            if (
-                !isStrongPassword(password)
-            ) {
-
-                return notice(
-                    $('authNotice'),
-                    'Password terlalu lemah.',
-                    'error'
-                );
-
-            }
-
-
-            if (
-                password !== password2
-            ) {
-
-                return notice(
-                    $('authNotice'),
-                    'Konfirmasi password tidak sama.',
-                    'error'
-                );
-
-            }
-
-
-            authBusy =
-                true;
-
-
-            const button =
-                e.submitter;
-
-
-            button.disabled =
-                true;
-
-
-            button.textContent =
-                'Membuat…';
-
-
-            try {
-
-                const credential =
-                    await createUserWithEmailAndPassword(
-                        auth,
-                        email,
-                        password
-                    );
-
-
-                await updateProfile(
-                    credential.user,
-                    {
-                        displayName: name
-                    }
-                );
-
-
-                currentUser =
-                    credential.user;
-
-
-                await sendEmailVerification(
-                    currentUser,
-                    actionCodeSettings()
-                );
-
-
-                $('registerForm')
-                    .reset();
-
-
-                $('verifyAddress')
-                    .textContent =
-                    email;
-
-
-                setView('verify');
-
-
-                notice(
-                    $('verifyNotice'),
-                    'Akun dibuat. Silakan verifikasi email Anda.'
-                );
-
-
-            } catch (err) {
-
-                notice(
-                    $('authNotice'),
-                    firebaseMessage(err),
-                    'error'
-                );
-
-            } finally {
-
-                authBusy =
-                    false;
-
-                button.disabled =
-                    false;
-
-                button.textContent =
-                    'Daftar';
-
-            }
-
-        }
-    );
-
-
-/* =========================================================
-   RESET PASSWORD
-   ========================================================= */
-
-$('resetForm')
-    ?.addEventListener(
-        'submit',
-        async e => {
-
-            e.preventDefault();
-
-
-            const email =
-                normalizeEmail(
-                    $('resetEmail').value
-                );
-
-
-            if (!isEmail(email)) {
-
-                return notice(
-                    $('authNotice'),
-                    'Email tidak valid.',
-                    'error'
-                );
-
-            }
-
-
-            const button =
-                e.submitter;
-
-
-            button.disabled =
-                true;
-
-
-            button.textContent =
-                'Mengirim…';
-
-
-            try {
-
-                await sendPasswordResetEmail(
-                    auth,
-                    email,
-                    actionCodeSettings()
-                );
-
-
-                notice(
-                    $('authNotice'),
-                    'Tautan reset dikirim.'
-                );
-
-
-                $('resetForm')
-                    .reset();
-
-
-            } catch (err) {
-
-                notice(
-                    $('authNotice'),
-                    firebaseMessage(err),
-                    'error'
-                );
-
-            } finally {
-
-                button.disabled =
-                    false;
-
-                button.textContent =
-                    'Kirim tautan';
-
-            }
-
-        }
-    );
-
-
-/* =========================================================
-   AUTH NAVIGATION
-   ========================================================= */
-
-$('showRegister')
-    ?.addEventListener(
-        'click',
-        () =>
-            switchAuth('register')
-    );
-
-
-$('showLogin')
-    ?.addEventListener(
-        'click',
-        () =>
-            switchAuth('login')
-    );
-
-
-$('showReset')
-    ?.addEventListener(
-        'click',
-        () =>
-            switchAuth('reset')
-    );
-
-
-$('backToLogin')
-    ?.addEventListener(
-        'click',
-        () =>
-            switchAuth('login')
-    );
-
-
-/* =========================================================
-   NAVIGASI PESAN
-   ========================================================= */
-
-$('navMessage')
-    ?.addEventListener(
-        'click',
-        () => {
-
-            switchAuth('login');
-
-            $('navMessage')
-                ?.classList
-                .add('active');
-
-            $('navInfo')
-                ?.classList
-                .remove('active');
-
-        }
-    );
-
-
-/* =========================================================
-   NAVIGASI INFO
-   ========================================================= */
-
-$('navInfo')
-    ?.addEventListener(
-        'click',
-        () => {
-
-            window.location.href =
-                'info.html';
-
-        }
-    );
-
-
-/* =========================================================
-   VERIFICATION EVENTS
-   ========================================================= */
-
-$('resendVerification')
-    ?.addEventListener(
-        'click',
-        sendVerification
-    );
-
-
-$('verifyLogout')
-    ?.addEventListener(
-        'click',
-        logout
-    );
-
-
-$('checkVerification')
-    ?.addEventListener(
-        'click',
-        async () => {
-
-            try {
-
-                await refreshUser(false);
-
-
-                if (
-                    !currentUser.emailVerified
-                ) {
-
-                    return notice(
-                        $('verifyNotice'),
-                        'Belum terverifikasi. Cek email Anda.',
-                        'error'
-                    );
-
-                }
-
-
-                await initializeChat(
-                    currentUser
-                );
-
-
-            } catch (e) {
-
-                notice(
-                    $('verifyNotice'),
-                    firebaseMessage(e),
-                    'error'
-                );
-
-            }
-
-        }
-    );
-
-
-/* =========================================================
-   AUTH STATE
-   ========================================================= */
-
-onAuthStateChanged(
-    auth,
-    async user => {
-
-        await persistenceReady
-            .catch(() => {});
-
-
-        currentUser =
-            user;
-
-
-        if (!user) {
-
-            cleanup();
-
-            myProfile =
-                null;
-
-            contacts =
-                {};
-
-            clearActive();
-
-            setView('auth');
-
-            switchAuth('login');
-
-            return;
-
-        }
-
-
-        try {
-
-            await refreshUser(false);
-
-
-            if (
-                !currentUser.emailVerified
-            ) {
-
-                $('verifyAddress')
-                    .textContent =
-                    currentUser.email || '';
-
-
-                setView('verify');
-
-                return;
-
-            }
-
-
-            await initializeChat(
-                currentUser
-            );
-
-
-        } catch (e) {
-
-            cleanup();
-
-            setView('auth');
-
-            switchAuth('login');
-
-
-            notice(
-                $('authNotice'),
-                firebaseMessage(e),
-                'error'
-            );
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   ACCOUNT MENU
-   ========================================================= */
-
-$('accountButton')
-    ?.addEventListener(
-        'click',
-        e => {
-
-            e.stopPropagation();
-
-            toggleMenu();
-
-        }
-    );
-
-
-$('accountMenu')
-    ?.addEventListener(
-        'click',
-        e =>
-            e.stopPropagation()
-    );
-
-
-document.addEventListener(
-    'click',
-    closeMenu
-);
-
-
-/* =========================================================
-   THEME BUTTON
-   ========================================================= */
-
-$('menuTheme')
-    ?.addEventListener(
-        'click',
-        () => {
-
-            toggleTheme();
-
-            closeMenu();
-
-        }
-    );
-
-
-/* =========================================================
-   LOGOUT
-   ========================================================= */
-
-$('menuLogout')
-    ?.addEventListener(
-        'click',
-        logout
-    );
-
-
-/* =========================================================
-   NEW CHAT
-   ========================================================= */
-
-$('newChatButton')
-    ?.addEventListener(
-        'click',
-        () => {
-
-            $('modalBackdrop')
-                ?.classList
-                .remove('hidden');
-
-
-            if ($('contactEmail')) {
-
-                $('contactEmail').value =
-                    '';
-
-            }
-
-
-            clearNotice(
-                $('contactModalNotice')
-            );
-
-
-            setTimeout(
-                () =>
-                    $('contactEmail')
-                        ?.focus(),
-                30
-            );
-
-        }
-    );
-
-
-$('addContactButton')
-    ?.addEventListener(
-        'click',
-        () =>
-            $('newChatButton')
-                ?.click()
-    );
-
-
-$('emptyAddButton')
-    ?.addEventListener(
-        'click',
-        () =>
-            $('newChatButton')
-                ?.click()
-    );
-
-
-/* =========================================================
-   CLOSE MODAL
-   ========================================================= */
-
-$('closeContactModal')
-    ?.addEventListener(
-        'click',
-        () =>
-            $('modalBackdrop')
-                ?.classList
-                .add('hidden')
-    );
-
-
-$('modalBackdrop')
-    ?.addEventListener(
-        'click',
-        e => {
-
-            if (
-                e.target ===
-                $('modalBackdrop')
-            ) {
-
-                $('modalBackdrop')
-                    .classList
-                    .add('hidden');
-
-            }
-
-        }
-    );
-
-
-/* =========================================================
-   ADD CONTACT FORM
-   ========================================================= */
-
-$('contactForm')
-    ?.addEventListener(
-        'submit',
-        async e => {
-
-            e.preventDefault();
-
-
-            const button =
-                e.submitter;
-
-
-            button.disabled =
-                true;
-
-
-            button.textContent =
-                'Mencari…';
-
-
-            try {
-
-                const result =
-                    await addContactByEmail(
-                        $('contactEmail').value
-                    );
-
-
-                $('modalBackdrop')
-                    ?.classList
-                    .add('hidden');
-
-
-                toast(
-                    `${result.displayName} ditambahkan.`
-                );
-
-
-                await openConversation(
-                    result.uid
-                );
-
-
-            } catch (err) {
-
-                notice(
-                    $('contactModalNotice'),
-                    err?.message ||
-                    firebaseMessage(err),
-                    'error'
-                );
-
-
-            } finally {
-
-                button.disabled =
-                    false;
-
-                button.textContent =
-                    'Cari & Mulai';
-
-            }
-
-        }
-    );
-
-
-/* =========================================================
-   CONTACT SEARCH
-   ========================================================= */
-
-$('contactSearch')
-    ?.addEventListener(
-        'input',
-        renderContacts
-    );
-
-
-/* =========================================================
-   MESSAGE FORM
-   ========================================================= */
-
-$('messageForm')
-    ?.addEventListener(
-        'submit',
-        e => {
-
-            e.preventDefault();
-
-            sendMessage();
-
-        }
-    );
-
-
-/* =========================================================
-   BACK TO CONTACTS
-   ========================================================= */
-
-$('backToContacts')
-    ?.addEventListener(
-        'click',
-        clearActive
-    );
-
-
-/* =========================================================
-   EMOJI
-   ========================================================= */
-
-$('emojiButton')
-    ?.addEventListener(
-        'click',
-        () => {
-
-            const input =
-                $('messageInput');
-
-            if (!input) return;
-
-
-            input.value +=
-                '😊';
-
-
-            input.focus();
-
-        }
-    );
-
-
-/* =========================================================
-   CHAT MENU
-   ========================================================= */
-
-$('chatMenuButton')
-    ?.addEventListener(
-        'click',
-        () =>
-            toast(
-                'Info chat belum tersedia'
-            )
-    );
-
-
-/* =========================================================
-   PASSWORD SHOW / HIDE
-   ========================================================= */
-
-document
-    .querySelectorAll('.eye')
-    .forEach(
-        button => {
-
-            button.addEventListener(
-                'click',
-                () => {
-
-                    const input =
-                        $(
-                            button.dataset.target
-                        );
-
-
-                    if (!input) return;
-
-
-                    input.type =
-                        input.type ===
-                        'password'
-                            ? 'text'
-                            : 'password';
-
-                }
-            );
-
-        }
-    );
-
-
-/* =========================================================
-   PRESENCE
-   ========================================================= */
-
-document.addEventListener(
-    'visibilitychange',
-    () =>
-        setPresence(
-            document.visibilityState ===
-            'visible'
-        )
-);
-
-
-window.addEventListener(
-    'beforeunload',
-    () =>
-        setPresence(false)
-);
+document.addEventListener('visibilitychange', () => {
+  const vis = document.visibilityState === 'visible';
+  setPresence(vis);
+  if (vis && S.activeUid && S.unread[S.activeUid]) { S.unread[S.activeUid] = 0; renderContacts(); updateBadge(); }
+});
+addEventListener('pagehide', () => setPresence(false));
