@@ -83,7 +83,7 @@ function setView(n) {
 }
 function fbMsg(e) {
   const map = {
-    'auth/invalid-credential': 'Incorrect email or password.', 'auth/invalid-email': 'Format email tidak valid.',
+    'auth/invalid-credential': 'Email atau password salah.', 'auth/invalid-email': 'Format email tidak valid.',
     'auth/email-already-in-use': 'Email sudah terdaftar.', 'auth/weak-password': 'Password terlalu lemah.',
     'auth/too-many-requests': 'Terlalu banyak percobaan. Tunggu beberapa saat.',
     'auth/network-request-failed': 'Jaringan bermasalah.', 'auth/user-not-found': 'Akun tidak ditemukan.',
@@ -158,13 +158,23 @@ function preloadPeers() {
   }
 }
 
-/* ================= GITHUB (opsional, untuk kirim gambar) ================= */
-const GH_KEY = 'arinex_gh';
+/* ================= GITHUB (opsional, untuk kirim gambar) =================
+   Owner / repo / branch / folder SUDAH TETAP di sini, jadi pengguna aplikasi
+   tidak perlu mengisinya. GANTI NILAI DI BAWAH INI dengan repo Anda yang
+   sebenarnya sebelum memakai fitur kirim gambar. Repo harus PUBLIK.
+   Yang masih diminta ke setiap pengguna hanyalah token pribadi mereka. */
+const GH_FIXED = {
+  owner: 'GANTI_USERNAME_GITHUB',   // contoh: 'arinex'
+  repo: 'GANTI_NAMA_REPO',          // contoh: 'pigeon-media'
+  branch: 'main',
+  folder: 'arinex-chat'
+};
+const GH_KEY = 'arinex_gh_token';
 function ghCfg() {
-  try {
-    const g = JSON.parse(ls.get(GH_KEY) || 'null');
-    return g && g.owner && g.repo && g.token ? g : null;
-  } catch { return null; }
+  const token = ls.get(GH_KEY);
+  if (!token) return null;
+  if (GH_FIXED.owner.startsWith('GANTI_') || GH_FIXED.repo.startsWith('GANTI_')) return null;
+  return { ...GH_FIXED, token };
 }
 async function compress(file, max = 1280, q = .82) {
   const bmp = await createImageBitmap(file);
@@ -256,7 +266,7 @@ async function askNotif() {
 function updateNotifBtn() {
   const b = $('stNotif'); if (!b) return;
   const s = notifState();
-  b.textContent = s === 'granted' ? '✅️ Notifikasi aktif' : s === 'denied' ? '🔕 Diblokir (ubah di pengaturan browser)' : '🔔 Aktifkan notifikasi';
+  b.textContent = s === 'granted' ? '🔔 Notifikasi aktif' : s === 'denied' ? '🔕 Diblokir (ubah di pengaturan browser)' : '🔔 Aktifkan notifikasi';
   b.disabled = s === 'granted' || s === 'denied' || s === 'unsupported';
 }
 async function notify(title, body, uid) {
@@ -509,9 +519,8 @@ function mkModal(id, title, html) {
 }
 const openSettings = () => { fillSettings(); updateNotifBtn(); $('settingsModal').classList.remove('hidden'); };
 function fillSettings() {
-  const g = ghCfg() || {};
-  $('ghOwner').value = g.owner || ''; $('ghRepo').value = g.repo || '';
-  $('ghBranch').value = g.branch || 'main'; $('ghFolder').value = g.folder || 'arinex-chat'; $('ghToken').value = g.token || '';
+  $('ghToken').value = ls.get(GH_KEY) || '';
+  $('ghRepoInfo').textContent = `${GH_FIXED.owner}/${GH_FIXED.repo} (${GH_FIXED.branch})`;
 }
 function openProfile() {
   S.newPhoto = null;
@@ -534,33 +543,32 @@ function buildUI() {
   const menu = $('accountMenu'), first = $('menuTheme');
   const mk = (id, html, fn) => { const b = el('button'); b.type = 'button'; b.id = id; b.innerHTML = html; b.onclick = () => { closeMenu(); fn(); }; menu.insertBefore(b, first); };
   mk('menuProfile', '👤 <span>Profil</span>', openProfile);
-  mk('menuSettings', '⚙ <span>General</span>', openSettings);
-  mk('menuInstall', '⬇ <span>Install aplikasi</span>', doInstall);
+  mk('menuSettings', '⚙ <span>Pengaturan</span>', openSettings);
+  mk('menuInstall', '⬇ <span>Pasang aplikasi</span>', doInstall);
 
-  /* modal pengaturan */
+  /* modal pengaturan: owner/repo/branch/folder sudah tetap (lihat GH_FIXED),
+     pengguna hanya perlu mengisi token pribadi mereka sendiri. */
   mkModal('settingsModal', 'Pengaturan', `
-    <p class="st-note">Kirim gambar lewat repositori GitHub Anda sendiri (opsional). Tanpa ini, chat teks tetap berjalan normal. Token hanya disimpan di perangkat ini. Pakai <b>fine-grained token</b> dengan izin <b>Contents: Read and write</b> khusus satu repo. Repo harus <b>publik</b></p>
-    <label class="field-label" for="ghOwner">Username Gh</label><input id="ghOwner" autocomplete="off" maxlength="60">
-    <label class="field-label" for="ghRepo">Repositori</label><input id="ghRepo" autocomplete="off" maxlength="100">
-    <label class="field-label" for="ghBranch">Branch</label><input id="ghBranch" autocomplete="off" maxlength="60">
-    <label class="field-label" for="ghFolder">Folder gambar</label><input id="ghFolder" autocomplete="off" maxlength="60">
-    <label class="field-label" for="ghToken">Gh Token</label><input id="ghToken" type="password" autocomplete="off" maxlength="200">
+    <p class="st-note">Kirim gambar lewat repositori: <b id="ghRepoInfo">—</b>. Masukkan token pribadi Anda supaya bisa mengunggah ke repo tersebut. Tanpa token, chat teks tetap berjalan normal. Token hanya disimpan di perangkat ini, tidak dikirim ke server mana pun selain GitHub. Pakai <b>fine-grained token</b> dengan izin <b>Contents: Read and write</b> khusus repo ini.</p>
+    <label class="field-label" for="ghToken">Token GitHub</label><input id="ghToken" type="password" autocomplete="off" maxlength="200" placeholder="github_pat_...">
     <div id="ghNotice" class="notice hidden"></div>
     <div class="stack"><button id="ghSave" class="primary full" type="button">Simpan & uji koneksi</button>
-    <button id="ghClear" class="secondary full" type="button">Hapus konfigurasi</button>
+    <button id="ghClear" class="secondary full" type="button">Hapus token</button>
     <button id="stNotif" class="secondary full" type="button"></button></div>`);
   $('ghSave').onclick = async () => {
-    const g = { owner: clean($('ghOwner').value, 60), repo: clean($('ghRepo').value, 100), branch: clean($('ghBranch').value, 60) || 'main', folder: clean($('ghFolder').value, 60).replace(/^\/+|\/+$/g, '') || 'arinex-chat', token: clean($('ghToken').value, 200) };
-    if (!/^[\w.-]+$/.test(g.owner) || !/^[\w.-]+$/.test(g.repo) || !g.token) return notice($('ghNotice'), 'Isi username, repo, dan token dengan benar.', 'error');
+    if (GH_FIXED.owner.startsWith('GANTI_') || GH_FIXED.repo.startsWith('GANTI_'))
+      return notice($('ghNotice'), 'Repo tujuan belum diatur developer aplikasi ini.', 'error');
+    const token = clean($('ghToken').value, 200);
+    if (!token) return notice($('ghNotice'), 'Isi token terlebih dahulu.', 'error');
     try {
-      const r = await waitFor(fetch(`https://api.github.com/repos/${g.owner}/${g.repo}`, { headers: { Authorization: `Bearer ${g.token}`, Accept: 'application/vnd.github+json' } }));
+      const r = await waitFor(fetch(`https://api.github.com/repos/${GH_FIXED.owner}/${GH_FIXED.repo}`, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' } }));
       if (!r.ok) throw new Error(r.status === 401 ? 'Token tidak valid.' : 'Repo tidak ditemukan / token tanpa akses.');
       const j = await r.json();
-      ls.set(GH_KEY, JSON.stringify(g));
+      ls.set(GH_KEY, token);
       notice($('ghNotice'), j.private ? 'Tersimpan, tapi repo PRIVAT: lawan bicara tidak bisa melihat gambar. Jadikan publik.' : 'Tersimpan. Pengiriman gambar aktif.', j.private ? 'error' : 'info');
     } catch (e) { notice($('ghNotice'), e.message, 'error'); }
   };
-  $('ghClear').onclick = () => { ls.del(GH_KEY); fillSettings(); notice($('ghNotice'), 'Konfigurasi dihapus.'); };
+  $('ghClear').onclick = () => { ls.del(GH_KEY); fillSettings(); notice($('ghNotice'), 'Token dihapus.'); };
   $('stNotif').onclick = askNotif;
 
   /* modal profil */
@@ -601,7 +609,7 @@ function buildUI() {
   att.onclick = () => file.click();
   $('emojiButton')?.after(att);
   const ep = el('div', 'emoji-panel hidden'); ep.id = 'emojiPanel';
-  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅😺😸😹😻😼😽🙀😿😾🙈🙉🙊').forEach(x => {
+  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅').forEach(x => {
     const b = el('button'); b.type = 'button'; b.textContent = x;
     b.onclick = () => { const i = $('messageInput'); i.value += x; i.focus(); };
     ep.append(b);
@@ -612,7 +620,7 @@ function buildUI() {
 
   /* banner pasang aplikasi */
   const bar = el('div', 'install-bar hidden'); bar.id = 'installBar';
-  bar.innerHTML = '<img src="img/icon-192.png" alt=""><div><strong>Install aplikasi</strong><span>Buka lebih cepat dari layar utama.</span></div><button class="primary" type="button" id="installGo">Install</button><button class="action-icon" type="button" id="installX" aria-label="Tutup">×</button>';
+  bar.innerHTML = '<img src="img/icon-192.png" alt=""><div><strong>Pasang aplikasi</strong><span>Buka lebih cepat dari layar utama.</span></div><button class="primary" type="button" id="installGo">Unduh</button><button class="action-icon" type="button" id="installX" aria-label="Tutup">×</button>';
   document.body.append(bar);
   $('installGo').onclick = doInstall;
   $('installX').onclick = () => { S.barHidden = true; updateInstallUI(); };
