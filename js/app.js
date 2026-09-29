@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signOut, reload, updateProfile } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import { getDatabase, ref, get, set, update, push, onValue, onChildAdded, query, limitToLast, onDisconnect, serverTimestamp, goOnline } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
-import { GH_FIXED_PUBLIC } from "./gh-config.js";
 
 /* ================= FIREBASE (konfigurasi & struktur data TIDAK diubah) ================= */
 const firebaseConfig = {
@@ -84,7 +83,7 @@ function setView(n) {
 }
 function fbMsg(e) {
   const map = {
-    'auth/invalid-credential': 'Email atau password salah.', 'auth/invalid-email': 'Format email tidak valid.',
+    'auth/invalid-credential': 'Incorrect email or password.', 'auth/invalid-email': 'Format email tidak valid.',
     'auth/email-already-in-use': 'Email sudah terdaftar.', 'auth/weak-password': 'Password terlalu lemah.',
     'auth/too-many-requests': 'Terlalu banyak percobaan. Tunggu beberapa saat.',
     'auth/network-request-failed': 'Jaringan bermasalah.', 'auth/user-not-found': 'Akun tidak ditemukan.',
@@ -159,16 +158,13 @@ function preloadPeers() {
   }
 }
 
-/* ================= GITHUB (opsional, untuk kirim gambar) =================
-   Owner/repo/branch/folder diatur di satu tempat: js/gh-config.js.
-   Yang masih diminta ke setiap pengguna hanyalah token pribadi mereka
-   sendiri (dibuat lewat tombol "Request Token" di Pengaturan). */
-const GH_FIXED = GH_FIXED_PUBLIC;
-const GH_KEY = 'arinex_gh_token';
+/* ================= GITHUB (opsional, untuk kirim gambar) ================= */
+const GH_KEY = 'arinex_gh';
 function ghCfg() {
-  const token = ls.get(GH_KEY);
-  if (!token) return null;
-  return { ...GH_FIXED, token };
+  try {
+    const g = JSON.parse(ls.get(GH_KEY) || 'null');
+    return g && g.owner && g.repo && g.token ? g : null;
+  } catch { return null; }
 }
 async function compress(file, max = 1280, q = .82) {
   const bmp = await createImageBitmap(file);
@@ -260,7 +256,7 @@ async function askNotif() {
 function updateNotifBtn() {
   const b = $('stNotif'); if (!b) return;
   const s = notifState();
-  b.textContent = s === 'granted' ? '🔔 Notifikasi aktif' : s === 'denied' ? '🔕 Diblokir (ubah di pengaturan browser)' : '🔔 Aktifkan notifikasi';
+  b.textContent = s === 'granted' ? '✅️ Notifikasi aktif' : s === 'denied' ? '🔕 Diblokir (ubah di pengaturan browser)' : '🔔 Aktifkan notifikasi';
   b.disabled = s === 'granted' || s === 'denied' || s === 'unsupported';
 }
 async function notify(title, body, uid) {
@@ -513,8 +509,9 @@ function mkModal(id, title, html) {
 }
 const openSettings = () => { fillSettings(); updateNotifBtn(); $('settingsModal').classList.remove('hidden'); };
 function fillSettings() {
-  $('ghToken').value = ls.get(GH_KEY) || '';
-  $('ghRepoInfo').textContent = `${GH_FIXED.owner}/${GH_FIXED.repo} (${GH_FIXED.branch})`;
+  const g = ghCfg() || {};
+  $('ghOwner').value = g.owner || ''; $('ghRepo').value = g.repo || '';
+  $('ghBranch').value = g.branch || 'main'; $('ghFolder').value = g.folder || 'arinex-chat'; $('ghToken').value = g.token || '';
 }
 function openProfile() {
   S.newPhoto = null;
@@ -537,33 +534,33 @@ function buildUI() {
   const menu = $('accountMenu'), first = $('menuTheme');
   const mk = (id, html, fn) => { const b = el('button'); b.type = 'button'; b.id = id; b.innerHTML = html; b.onclick = () => { closeMenu(); fn(); }; menu.insertBefore(b, first); };
   mk('menuProfile', '👤 <span>Profil</span>', openProfile);
-  mk('menuSettings', '⚙ <span>Pengaturan</span>', openSettings);
-  mk('menuInstall', '⬇ <span>Pasang aplikasi</span>', doInstall);
+  mk('menuSettings', '⚙ <span>General</span>', openSettings);
+  mk('menuInstall', '⬇ <span>Install aplikasi</span>', doInstall);
 
-  /* modal pengaturan: owner/repo/branch/folder sudah tetap (lihat GH_FIXED),
-     pengguna hanya perlu membuat & mengisi token pribadi mereka sendiri. */
+  /* modal pengaturan */
   mkModal('settingsModal', 'Pengaturan', `
-    <p class="st-note">Kirim gambar lewat repositori: <b id="ghRepoInfo">—</b>. Buat token pribadi Anda sendiri lewat tombol di bawah, lalu tempel di sini. Tanpa token, chat teks tetap berjalan normal. Token hanya disimpan di perangkat ini, tidak dikirim ke server mana pun selain GitHub.</p>
-    <label class="field-label" for="ghToken">Token GitHub</label><input id="ghToken" type="password" autocomplete="off" maxlength="200" placeholder="github_pat_...">
+    <p class="st-note">Kirim gambar lewat repositori GitHub Anda sendiri (opsional). Tanpa ini, chat teks tetap berjalan normal. Token hanya disimpan di perangkat ini. Pakai <b>fine-grained token</b> dengan izin <b>Contents: Read and write</b> khusus satu repo. Repo harus <b>publik</b></p>
+    <label class="field-label" for="ghOwner">Username Gh</label><input id="ghOwner" autocomplete="off" maxlength="60">
+    <label class="field-label" for="ghRepo">Repositori</label><input id="ghRepo" autocomplete="off" maxlength="100">
+    <label class="field-label" for="ghBranch">Branch</label><input id="ghBranch" autocomplete="off" maxlength="60">
+    <label class="field-label" for="ghFolder">Folder gambar</label><input id="ghFolder" autocomplete="off" maxlength="60">
+    <label class="field-label" for="ghToken">Gh Token</label><input id="ghToken" type="password" autocomplete="off" maxlength="200">
     <div id="ghNotice" class="notice hidden"></div>
-    <div class="stack">
-    <button id="ghGetToken" class="secondary full" type="button">🔑 Request Token</button>
-    <button id="ghSave" class="primary full" type="button">Simpan & uji koneksi</button>
-    <button id="ghClear" class="secondary full" type="button">Hapus token</button>
+    <div class="stack"><button id="ghSave" class="primary full" type="button">Simpan & uji koneksi</button>
+    <button id="ghClear" class="secondary full" type="button">Hapus konfigurasi</button>
     <button id="stNotif" class="secondary full" type="button"></button></div>`);
-  $('ghGetToken').onclick = () => window.open('token.html', '_blank', 'noopener');
   $('ghSave').onclick = async () => {
-    const token = clean($('ghToken').value, 200);
-    if (!token) return notice($('ghNotice'), 'Isi token terlebih dahulu. Ketuk "Request Token" jika belum punya.', 'error');
+    const g = { owner: clean($('ghOwner').value, 60), repo: clean($('ghRepo').value, 100), branch: clean($('ghBranch').value, 60) || 'main', folder: clean($('ghFolder').value, 60).replace(/^\/+|\/+$/g, '') || 'arinex-chat', token: clean($('ghToken').value, 200) };
+    if (!/^[\w.-]+$/.test(g.owner) || !/^[\w.-]+$/.test(g.repo) || !g.token) return notice($('ghNotice'), 'Isi username, repo, dan token dengan benar.', 'error');
     try {
-      const r = await waitFor(fetch(`https://api.github.com/repos/${GH_FIXED.owner}/${GH_FIXED.repo}`, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' } }));
+      const r = await waitFor(fetch(`https://api.github.com/repos/${g.owner}/${g.repo}`, { headers: { Authorization: `Bearer ${g.token}`, Accept: 'application/vnd.github+json' } }));
       if (!r.ok) throw new Error(r.status === 401 ? 'Token tidak valid.' : 'Repo tidak ditemukan / token tanpa akses.');
       const j = await r.json();
-      ls.set(GH_KEY, token);
+      ls.set(GH_KEY, JSON.stringify(g));
       notice($('ghNotice'), j.private ? 'Tersimpan, tapi repo PRIVAT: lawan bicara tidak bisa melihat gambar. Jadikan publik.' : 'Tersimpan. Pengiriman gambar aktif.', j.private ? 'error' : 'info');
     } catch (e) { notice($('ghNotice'), e.message, 'error'); }
   };
-  $('ghClear').onclick = () => { ls.del(GH_KEY); fillSettings(); notice($('ghNotice'), 'Token dihapus.'); };
+  $('ghClear').onclick = () => { ls.del(GH_KEY); fillSettings(); notice($('ghNotice'), 'Konfigurasi dihapus.'); };
   $('stNotif').onclick = askNotif;
 
   /* modal profil */
@@ -604,7 +601,7 @@ function buildUI() {
   att.onclick = () => file.click();
   $('emojiButton')?.after(att);
   const ep = el('div', 'emoji-panel hidden'); ep.id = 'emojiPanel';
-  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅').forEach(x => {
+  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅😺😸😹😻😼😽🙀😿😾🙈🙉🙊').forEach(x => {
     const b = el('button'); b.type = 'button'; b.textContent = x;
     b.onclick = () => { const i = $('messageInput'); i.value += x; i.focus(); };
     ep.append(b);
@@ -615,7 +612,7 @@ function buildUI() {
 
   /* banner pasang aplikasi */
   const bar = el('div', 'install-bar hidden'); bar.id = 'installBar';
-  bar.innerHTML = '<img src="img/icon-192.png" alt=""><div><strong>Pasang aplikasi</strong><span>Buka lebih cepat dari layar utama.</span></div><button class="primary" type="button" id="installGo">Unduh</button><button class="action-icon" type="button" id="installX" aria-label="Tutup">×</button>';
+  bar.innerHTML = '<img src="img/icon-192.png" alt=""><div><strong>Install aplikasi</strong><span>Buka lebih cepat dari layar utama.</span></div><button class="primary" type="button" id="installGo">Install</button><button class="action-icon" type="button" id="installX" aria-label="Tutup">×</button>';
   document.body.append(bar);
   $('installGo').onclick = doInstall;
   $('installX').onclick = () => { S.barHidden = true; updateInstallUI(); };
@@ -637,3 +634,18 @@ document.addEventListener('visibilitychange', () => {
   if (vis && S.activeUid && S.unread[S.activeUid]) { S.unread[S.activeUid] = 0; renderContacts(); updateBadge(); }
 });
 addEventListener('pagehide', () => setPresence(false));
+
+
+
+Perbaiki di bagian general nya
+Dibuat permanen 
+username:
+085871373603 (pake inisial nama arnx-server3.26o.gz)
+Repository:
+Chat (pake inisial nama arinexPigeon
+Branch:
+Main
+Jadi user tidak perlu input itu
+
+Tambahkan tombol reques token menuju halaman token.html
+Fahamkan
