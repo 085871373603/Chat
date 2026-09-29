@@ -4,7 +4,7 @@
    Repo harus PUBLIK agar gambar bisa dilihat lawan bicara. */
 export const GH_FIXED_PUBLIC = {
   owner: '085871373603',   // <-- ganti jika ini bukan username GitHub asli Anda
-  repo: 'arinexPigeon',
+  repo: 'Chat',
   branch: 'main',
-  folder: 'arinex-chat'
+  folder: 'Img-pigeon-chat'
 };
