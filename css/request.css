@@ -1,6 +1,6 @@
 /* ============================================================
    request.css
-   ARINEX REQUEST — Mobile App Style
+   ARINEX REQUEST — Mobile App Style (Retro Pixelated)
    ============================================================ */
 
 /* ---------- Root / Theme ---------- */
@@ -27,18 +27,58 @@
 
   --shadow: 0 8px 28px rgba(0,0,0,.28);
 
+  /* Variabel ini tetap ada, tapi kita gunakan clip-path polygon */
   --radius: 10px;
   --radius-small: 7px;
 
   --app-h: 100dvh;
-}
 
+  /* =======================================================
+     PIXELATED CORNER (Lebih halus namun tetap bertekstur pixel)
+     ======================================================= */
+
+  --alias-8: polygon(
+    8px 0, calc(100% - 8px) 0, calc(100% - 6px) 0, calc(100% - 6px) 1px, calc(100% - 4px) 1px, calc(100% - 4px) 2px, calc(100% - 3px) 2px, calc(100% - 3px) 3px, calc(100% - 2px) 3px, calc(100% - 2px) 4px, calc(100% - 1px) 4px, calc(100% - 1px) 6px, 100% 6px, 100% 8px,
+    100% calc(100% - 8px), 100% calc(100% - 6px), calc(100% - 1px) calc(100% - 6px), calc(100% - 1px) calc(100% - 4px), calc(100% - 2px) calc(100% - 4px), calc(100% - 2px) calc(100% - 3px), calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) calc(100% - 2px), calc(100% - 4px) calc(100% - 2px), calc(100% - 4px) calc(100% - 1px), calc(100% - 6px) calc(100% - 1px), calc(100% - 6px) 100%, calc(100% - 8px) 100%,
+    8px 100%, 6px 100%, 6px calc(100% - 1px), 4px calc(100% - 1px), 4px calc(100% - 2px), 3px calc(100% - 2px), 3px calc(100% - 3px), 2px calc(100% - 3px), 2px calc(100% - 4px), 1px calc(100% - 4px), 1px calc(100% - 6px), 0 calc(100% - 6px), 0 calc(100% - 8px),
+    0 8px, 0 6px, 1px 6px, 1px 4px, 2px 4px, 2px 3px, 3px 3px, 3px 2px, 4px 2px, 4px 1px, 6px 1px, 6px 0, 8px 0
+  );
+
+  --alias-10: polygon(
+    10px 0, calc(100% - 10px) 0, calc(100% - 7px) 0, calc(100% - 7px) 1px, calc(100% - 5px) 1px, calc(100% - 5px) 2px, calc(100% - 4px) 2px, calc(100% - 4px) 3px, calc(100% - 3px) 3px, calc(100% - 3px) 4px, calc(100% - 2px) 4px, calc(100% - 2px) 5px, calc(100% - 1px) 5px, calc(100% - 1px) 7px, 100% 7px, 100% 10px,
+    100% calc(100% - 10px), 100% calc(100% - 7px), calc(100% - 1px) calc(100% - 7px), calc(100% - 1px) calc(100% - 5px), calc(100% - 2px) calc(100% - 5px), calc(100% - 2px) calc(100% - 4px), calc(100% - 3px) calc(100% - 4px), calc(100% - 3px) calc(100% - 3px), calc(100% - 4px) calc(100% - 3px), calc(100% - 4px) calc(100% - 2px), calc(100% - 5px) calc(100% - 2px), calc(100% - 5px) calc(100% - 1px), calc(100% - 7px) calc(100% - 1px), calc(100% - 7px) 100%, calc(100% - 10px) 100%,
+    10px 100%, 7px 100%, 7px calc(100% - 1px), 5px calc(100% - 1px), 5px calc(100% - 2px), 4px calc(100% - 2px), 4px calc(100% - 3px), 3px calc(100% - 3px), 3px calc(100% - 4px), 2px calc(100% - 4px), 2px calc(100% - 5px), 1px calc(100% - 5px), 1px calc(100% - 7px), 0 calc(100% - 7px), 0 calc(100% - 10px),
+    0 10px, 0 7px, 1px 7px, 1px 5px, 2px 5px, 2px 4px, 3px 4px, 3px 3px, 4px 3px, 4px 2px, 5px 2px, 5px 1px, 7px 1px, 7px 0, 10px 0
+  );
+
+  --alias-16: polygon(
+    16px 0, calc(100% - 16px) 0, calc(100% - 11px) 0, calc(100% - 11px) 1px, calc(100% - 9px) 1px, calc(100% - 9px) 2px, calc(100% - 7px) 2px, calc(100% - 7px) 3px, calc(100% - 6px) 3px, calc(100% - 6px) 4px, calc(100% - 5px) 4px, calc(100% - 5px) 5px, calc(100% - 4px) 5px, calc(100% - 4px) 6px, calc(100% - 3px) 6px, calc(100% - 3px) 7px, calc(100% - 2px) 7px, calc(100% - 2px) 9px, calc(100% - 1px) 9px, calc(100% - 1px) 11px, 100% 11px, 100% 16px,
+    100% calc(100% - 16px), 100% calc(100% - 11px), calc(100% - 1px) calc(100% - 11px), calc(100% - 1px) calc(100% - 9px), calc(100% - 2px) calc(100% - 9px), calc(100% - 2px) calc(100% - 7px), calc(100% - 3px) calc(100% - 7px), calc(100% - 3px) calc(100% - 6px), calc(100% - 4px) calc(100% - 6px), calc(100% - 4px) calc(100% - 5px), calc(100% - 5px) calc(100% - 5px), calc(100% - 5px) calc(100% - 4px), calc(100% - 6px) calc(100% - 4px), calc(100% - 6px) calc(100% - 3px), calc(100% - 7px) calc(100% - 3px), calc(100% - 7px) calc(100% - 2px), calc(100% - 9px) calc(100% - 2px), calc(100% - 9px) calc(100% - 1px), calc(100% - 11px) calc(100% - 1px), calc(100% - 11px) 100%, calc(100% - 16px) 100%,
+    16px 100%, 11px 100%, 11px calc(100% - 1px), 9px calc(100% - 1px), 9px calc(100% - 2px), 7px calc(100% - 2px), 7px calc(100% - 3px), 6px calc(100% - 3px), 6px calc(100% - 4px), 5px calc(100% - 4px), 5px calc(100% - 5px), 4px calc(100% - 5px), 4px calc(100% - 6px), 3px calc(100% - 6px), 3px calc(100% - 7px), 2px calc(100% - 7px), 2px calc(100% - 9px), 1px calc(100% - 9px), 1px calc(100% - 11px), 0 calc(100% - 11px), 0 calc(100% - 16px),
+    0 16px, 0 11px, 1px 11px, 1px 9px, 2px 9px, 2px 7px, 3px 7px, 3px 6px, 4px 6px, 4px 5px, 5px 5px, 5px 4px, 6px 4px, 6px 3px, 7px 3px, 7px 2px, 9px 2px, 9px 1px, 11px 1px, 11px 0, 16px 0
+  );
+
+  --alias-24: polygon(
+    24px 0, calc(100% - 24px) 0, calc(100% - 17px) 0, calc(100% - 17px) 1px, calc(100% - 14px) 1px, calc(100% - 14px) 2px, calc(100% - 11px) 2px, calc(100% - 11px) 3px, calc(100% - 9px) 3px, calc(100% - 9px) 4px, calc(100% - 8px) 4px, calc(100% - 8px) 5px, calc(100% - 6px) 5px, calc(100% - 6px) 6px, calc(100% - 5px) 6px, calc(100% - 5px) 8px, calc(100% - 4px) 8px, calc(100% - 4px) 9px, calc(100% - 3px) 9px, calc(100% - 3px) 11px, calc(100% - 2px) 11px, calc(100% - 2px) 14px, calc(100% - 1px) 14px, calc(100% - 1px) 17px, 100% 17px, 100% 24px,
+    100% calc(100% - 24px), 100% calc(100% - 17px), calc(100% - 1px) calc(100% - 17px), calc(100% - 1px) calc(100% - 14px), calc(100% - 2px) calc(100% - 14px), calc(100% - 2px) calc(100% - 11px), calc(100% - 3px) calc(100% - 11px), calc(100% - 3px) calc(100% - 9px), calc(100% - 4px) calc(100% - 9px), calc(100% - 4px) calc(100% - 8px), calc(100% - 5px) calc(100% - 8px), calc(100% - 5px) calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) calc(100% - 5px), calc(100% - 8px) calc(100% - 5px), calc(100% - 8px) calc(100% - 4px), calc(100% - 9px) calc(100% - 4px), calc(100% - 9px) calc(100% - 3px), calc(100% - 11px) calc(100% - 3px), calc(100% - 11px) calc(100% - 2px), calc(100% - 14px) calc(100% - 2px), calc(100% - 14px) calc(100% - 1px), calc(100% - 17px) calc(100% - 1px), calc(100% - 17px) 100%, calc(100% - 24px) 100%,
+    24px 100%, 17px 100%, 17px calc(100% - 1px), 14px calc(100% - 1px), 14px calc(100% - 2px), 11px calc(100% - 2px), 11px calc(100% - 3px), 9px calc(100% - 3px), 9px calc(100% - 4px), 8px calc(100% - 4px), 8px calc(100% - 5px), 6px calc(100% - 5px), 6px calc(100% - 6px), 5px calc(100% - 6px), 5px calc(100% - 8px), 4px calc(100% - 8px), 4px calc(100% - 9px), 3px calc(100% - 9px), 3px calc(100% - 11px), 2px calc(100% - 11px), 2px calc(100% - 14px), 1px calc(100% - 14px), 1px calc(100% - 17px), 0 calc(100% - 17px), 0 calc(100% - 24px),
+    0 24px, 0 17px, 1px 17px, 1px 14px, 2px 14px, 2px 11px, 3px 11px, 3px 9px, 4px 9px, 4px 8px, 5px 8px, 5px 6px, 6px 6px, 6px 5px, 8px 5px, 8px 4px, 9px 4px, 9px 3px, 11px 3px, 11px 2px, 14px 2px, 14px 1px, 17px 1px, 17px 0, 24px 0
+  );
+
+  --alias-circle: polygon(
+    50% 0%, 57% 1%, 65% 2%, 71% 5%, 78% 8%, 84% 13%, 89% 19%, 93% 26%, 96% 33%, 98% 41%, 100% 50%,
+    98% 59%, 96% 67%, 93% 74%, 89% 81%, 84% 87%, 78% 92%, 71% 95%, 65% 98%, 57% 99%, 50% 100%,
+    43% 99%, 35% 98%, 29% 95%, 22% 92%, 16% 87%, 11% 81%, 7% 74%, 4% 67%, 2% 59%, 0% 50%,
+    2% 41%, 4% 33%, 7% 26%, 11% 19%, 16% 13%, 22% 8%, 29% 5%, 35% 2%, 43% 1%, 50% 0%
+  );
+}
 
 /* ---------- Basic Reset ---------- */
 
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  image-rendering: pixelated; /* Memberi efek pixel secara global */
 }
 
 html,
@@ -53,27 +93,16 @@ body {
   min-height: var(--app-h);
   background: var(--bg-main);
   color: var(--text-main);
-
   font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Arial,
-    sans-serif;
-
+    Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Arial, sans-serif;
   font-size: 14px;
   line-height: 1.45;
-
   user-select: none;
   -webkit-user-select: none;
-
   overflow-x: hidden;
   overscroll-behavior: none;
 }
-
 
 /* ---------- Prevent Mobile Zoom ---------- */
 
@@ -96,7 +125,6 @@ button {
   -webkit-user-select: none;
 }
 
-
 /* ---------- Focus ---------- */
 
 :focus {
@@ -108,36 +136,26 @@ button {
   outline-offset: 2px;
 }
 
-
 /* ============================================================
    MAIN APP
    ============================================================ */
 
 .request-shell {
   position: relative;
-
   width: 100%;
   min-height: var(--app-h);
-
   padding:
     calc(14px + env(safe-area-inset-top))
     14px
     calc(14px + env(safe-area-inset-bottom))
     14px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   background:
-    radial-gradient(
-      circle at 50% -10%,
-      rgba(181,18,26,.18),
-      transparent 42%
-    ),
+    radial-gradient(circle at 50% -10%, rgba(181,18,26,.18), transparent 42%),
     var(--bg-main);
 }
-
 
 /* ============================================================
    REQUEST CARD
@@ -145,110 +163,78 @@ button {
 
 .request-card {
   position: relative;
-
   width: 100%;
   max-width: 460px;
-
   min-height: 540px;
-
   padding: 22px 18px 18px;
-
   background: var(--bg-panel);
-
   border: 1px solid var(--border);
-
-  border-radius: 12px;
-
+  border-radius: 0;
+  clip-path: var(--alias-16); /* Mengubah lengkung card */
   box-shadow: var(--shadow);
-
   overflow: hidden;
 }
 
-
 /* top line */
-
 .request-card::before {
   content: "";
-
   position: absolute;
   left: 0;
   top: 0;
-
   width: 100%;
   height: 3px;
-
   background: var(--bg-header);
 }
 
-
 /* ============================================================
-   BRAND
+   BRAND / LOGO (Jangan Bulat)
    ============================================================ */
 
 .brand-mark {
   width: 44px;
   height: 44px;
-
   margin: 2px auto 20px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   background: var(--bg-header);
-
   color: #fff;
-
   border: 1px solid rgba(255,255,255,.08);
-
-  border-radius: 8px;
-
+  border-radius: 0; /* Jangan Bulat */
+  clip-path: none; /* Bentuk asli kotak / original */
   font-size: 18px;
   font-weight: 800;
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.08),
-    0 4px 12px rgba(0,0,0,.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 4px 12px rgba(0,0,0,.18);
 }
 
+/* Pengamanan khusus halaman login (jika class ini digunakan) */
+.auth-brand img, .login-img {
+  border-radius: 0 !important;
+  clip-path: none !important;
+}
 
 /* ============================================================
    TYPOGRAPHY
    ============================================================ */
 
-h1,
-h2 {
+h1, h2 {
   margin: 0;
-
   color: var(--text-main);
-
   font-weight: 700;
-
   text-align: center;
 }
 
-h1 {
-  font-size: 19px;
-  letter-spacing: .01em;
-}
-
-h2 {
-  font-size: 21px;
-  letter-spacing: .01em;
-}
+h1 { font-size: 19px; letter-spacing: .01em; }
+h2 { font-size: 21px; letter-spacing: .01em; }
 
 .status-text,
 .result-note {
   margin: 7px 0 0;
-
   color: var(--text-sub);
-
   text-align: center;
-
   font-size: 12px;
   line-height: 1.5;
 }
-
 
 /* ============================================================
    LOADING
@@ -256,33 +242,25 @@ h2 {
 
 .spinner {
   position: relative;
-
   width: 42px;
   height: 42px;
-
   margin: 4px auto 16px;
-
-  border-radius: 50%;
-
+  border-radius: 0;
+  clip-path: var(--alias-circle); /* Membulat secara pixelated */
   border: 3px solid rgba(255,255,255,.08);
   border-top-color: var(--accent);
-
   animation: request-spin .85s linear infinite;
 }
 
 .spinner::after {
   content: "";
-
   position: absolute;
-
   inset: 7px;
-
-  border-radius: 50%;
-
+  border-radius: 0;
+  clip-path: var(--alias-circle);
   border: 2px solid rgba(255,255,255,.03);
   border-bottom-color: rgba(255,255,255,.18);
 }
-
 
 /* ============================================================
    PROGRESS
@@ -291,35 +269,22 @@ h2 {
 .progress-track {
   width: 100%;
   height: 6px;
-
   margin: 18px 0 18px;
-
   overflow: hidden;
-
   background: #1b272e;
-
   border: 1px solid rgba(255,255,255,.03);
-
-  border-radius: 999px;
+  border-radius: 0;
+  clip-path: var(--alias-24); /* Sudut progress bar dibuat kasar */
 }
 
 .progress-bar {
   width: 0;
   height: 100%;
-
-  background:
-    linear-gradient(
-      90deg,
-      var(--accent),
-      #12bf6b
-    );
-
-  border-radius: inherit;
-
-  transition:
-    width .35s ease;
+  background: linear-gradient(90deg, var(--accent), #12bf6b);
+  border-radius: 0;
+  clip-path: var(--alias-24);
+  transition: width .35s ease;
 }
-
 
 /* ============================================================
    STEP LIST
@@ -327,116 +292,78 @@ h2 {
 
 .steps {
   width: 100%;
-
   display: flex;
   flex-direction: column;
-
   gap: 6px;
 }
 
 .step {
   min-height: 40px;
-
   padding: 9px 11px;
-
   display: flex;
   align-items: center;
-
   gap: 10px;
-
   background: var(--bg-panel-2);
-
   border: 1px solid var(--border);
-
-  border-radius: var(--radius-small);
-
+  border-radius: 0;
+  clip-path: var(--alias-8); /* Menggunakan poligon kasar 8px */
   color: var(--text-sub);
-
   font-size: 12px;
-
-  transition:
-    background .18s ease,
-    border-color .18s ease,
-    color .18s ease;
+  transition: background .18s ease, border-color .18s ease, color .18s ease;
 }
 
-
 /* step icon */
-
 .step-icon {
   width: 20px;
   height: 20px;
-
   flex: 0 0 20px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   color: #60717b;
-
   background: #1c2930;
-
-  border-radius: 50%;
-
+  border-radius: 0;
+  clip-path: var(--alias-circle);
   font-size: 11px;
   font-weight: 800;
 }
 
-
 /* active */
-
 .step.active {
   background: rgba(0,166,81,.08);
-
   border-color: rgba(0,166,81,.32);
-
   color: var(--text-main);
 }
 
 .step.active .step-icon {
   background: rgba(0,166,81,.18);
-
   color: var(--accent);
-
-  box-shadow:
-    0 0 0 3px rgba(0,166,81,.05);
+  box-shadow: 0 0 0 3px rgba(0,166,81,.05);
 }
 
-
 /* done */
-
 .step.done {
   background: rgba(0,166,81,.045);
-
   border-color: rgba(0,166,81,.18);
-
   color: var(--text-main);
 }
 
 .step.done .step-icon {
   background: var(--accent);
-
   color: #fff;
 }
 
-
 /* error */
-
 .step.error {
   background: rgba(229,57,53,.05);
-
   border-color: rgba(229,57,53,.22);
-
   color: var(--text-main);
 }
 
 .step.error .step-icon {
   background: var(--danger);
-
   color: #fff;
 }
-
 
 /* ============================================================
    SUCCESS
@@ -444,53 +371,38 @@ h2 {
 
 .success-badge {
   position: relative;
-
   width: 62px;
   height: 62px;
-
   margin: 8px auto 12px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   background: rgba(0,166,81,.10);
-
   border: 2px solid rgba(0,166,81,.28);
-
-  border-radius: 50%;
-
+  border-radius: 0;
+  clip-path: var(--alias-circle);
   color: var(--accent);
-
   font-size: 28px;
   font-weight: 800;
 }
 
 .success-badge::after {
   content: "";
-
   position: absolute;
-
   inset: -7px;
-
   border: 1px solid rgba(0,166,81,.10);
-
-  border-radius: 50%;
+  border-radius: 0;
+  clip-path: var(--alias-circle);
 }
 
 .success-label {
   margin-bottom: 2px;
-
   color: var(--accent);
-
   text-align: center;
-
   font-size: 10px;
   font-weight: 800;
-
   letter-spacing: .18em;
 }
-
 
 /* ============================================================
    RESULT INFORMATION
@@ -498,33 +410,22 @@ h2 {
 
 .info-grid {
   width: 100%;
-
   margin-top: 20px;
-
   background: var(--bg-panel-2);
-
   border: 1px solid var(--border);
-
-  border-radius: 9px;
-
+  border-radius: 0;
+  clip-path: var(--alias-10);
   overflow: hidden;
 }
 
 .info-row {
   min-height: 42px;
-
   display: grid;
-
   grid-template-columns: 105px minmax(0, 1fr);
-
   align-items: center;
-
   gap: 8px;
-
   padding: 9px 11px;
-
   border-bottom: 1px solid var(--border);
-
   background: rgba(255,255,255,.008);
 }
 
@@ -534,25 +435,19 @@ h2 {
 
 .info-row span {
   color: var(--text-sub);
-
   font-size: 11px;
 }
 
 .info-row strong {
   min-width: 0;
-
   color: var(--text-main);
-
   font-size: 11px;
   font-weight: 600;
-
   text-align: right;
-
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 
 /* ============================================================
    TOKEN FORM
@@ -560,77 +455,49 @@ h2 {
 
 .token-form {
   width: 100%;
-
   margin-top: 17px;
 }
 
 .token-form label {
   display: block;
-
-  margin:
-    0 0 5px
-    2px;
-
+  margin: 0 0 5px 2px;
   color: var(--text-sub);
-
   font-size: 11px;
   font-weight: 600;
 }
 
 .token-box {
   width: 100%;
-
   display: grid;
-
-  grid-template-columns:
-    minmax(0, 1fr)
-    auto;
-
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 6px;
-
   padding: 5px;
-
   background: var(--bg-input);
-
   border: 1px solid var(--border);
-
-  border-radius: 8px;
+  border-radius: 0;
+  clip-path: var(--alias-8);
 }
 
 .token-box:focus-within {
   border-color: rgba(0,166,81,.45);
-
-  box-shadow:
-    0 0 0 2px rgba(0,166,81,.06);
+  box-shadow: 0 0 0 2px rgba(0,166,81,.06);
 }
 
 .token-box input {
   width: 100%;
   min-width: 0;
-
   padding: 9px 9px;
-
   border: 0;
-
   outline: none;
-
   background: transparent;
-
   color: var(--text-main);
-
   font-size: 11px;
-
-  font-family:
-    "SFMono-Regular",
-    Consolas,
-    "Liberation Mono",
-    monospace;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 .token-box input::placeholder {
   color: #667780;
 }
-
 
 /* ============================================================
    COPY BUTTON
@@ -638,24 +505,16 @@ h2 {
 
 .copy-btn {
   min-width: 68px;
-
   padding: 0 12px;
-
   border: 0;
-
-  border-radius: 6px;
-
+  border-radius: 0;
+  clip-path: var(--alias-8);
   background: var(--accent);
-
   color: #fff;
-
   font-size: 10px;
   font-weight: 800;
-
   cursor: pointer;
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
 }
 
 .copy-btn:hover {
@@ -666,22 +525,16 @@ h2 {
   transform: translateY(1px);
 }
 
-
 /* ============================================================
    COPY STATUS
    ============================================================ */
 
 .copy-status {
   min-height: 15px;
-
-  margin:
-    6px 2px 0;
-
+  margin: 6px 2px 0;
   color: var(--accent);
-
   font-size: 10px;
 }
-
 
 /* ============================================================
    HIDDEN
@@ -690,7 +543,6 @@ h2 {
 .hidden {
   display: none !important;
 }
-
 
 /* ============================================================
    DARK UI DETAILS
@@ -703,7 +555,6 @@ h2 {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-
 
 /* ============================================================
    SCROLLBAR
@@ -719,8 +570,8 @@ h2 {
 
 .steps::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,.12);
-
-  border-radius: 20px;
+  /* Tidak di-clip-path agar scrollbar bawaan Chrome tetap stabil */
+  border-radius: 20px; 
 }
 
 * {
@@ -728,135 +579,86 @@ h2 {
   scrollbar-width: thin;
 }
 
-
 /* ============================================================
    MOBILE APP MODE
    ============================================================ */
 
 @media (max-width: 768px) {
-
   .request-shell {
     min-height: var(--app-h);
-
     align-items: stretch;
-
-    padding:
-      env(safe-area-inset-top)
-      0
-      env(safe-area-inset-bottom)
-      0;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
   }
-
   .request-card {
     width: 100%;
     max-width: 100%;
-
     min-height: var(--app-h);
-
-    padding:
-      20px 16px
-      calc(20px + env(safe-area-inset-bottom));
-
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
     border: 0;
-
     border-radius: 0;
-
+    clip-path: none; /* Menghilangkan sudut jika layar penuh di HP */
     box-shadow: none;
-
     display: flex;
     flex-direction: column;
   }
-
   .brand-mark {
     margin-top: 2px;
   }
 }
-
 
 /* ============================================================
    SMALL MOBILE
    ============================================================ */
 
 @media (max-width: 420px) {
-
   .request-card {
     padding-left: 13px;
     padding-right: 13px;
   }
-
   .brand-mark {
     width: 42px;
     height: 42px;
-
     margin-bottom: 17px;
   }
-
-  h1 {
-    font-size: 18px;
-  }
-
-  h2 {
-    font-size: 20px;
-  }
-
-  .status-text,
-  .result-note {
-    font-size: 11.5px;
-  }
-
+  h1 { font-size: 18px; }
+  h2 { font-size: 20px; }
+  .status-text, .result-note { font-size: 11.5px; }
   .step {
     min-height: 39px;
-
-    padding:
-      8px 10px;
-
+    padding: 8px 10px;
     font-size: 11.5px;
   }
-
   .info-row {
     grid-template-columns: 94px minmax(0, 1fr);
-
-    padding:
-      9px 10px;
+    padding: 9px 10px;
   }
-
-  .info-row span,
-  .info-row strong {
+  .info-row span, .info-row strong {
     font-size: 10.5px;
   }
-
   .token-box input {
     font-size: 10px;
   }
-
   .copy-btn {
     min-width: 64px;
     padding: 0 10px;
   }
 }
 
-
 /* ============================================================
    VERY SMALL SCREEN
    ============================================================ */
 
 @media (max-width: 340px) {
-
   .request-card {
     padding-left: 10px;
     padding-right: 10px;
   }
-
   .info-row {
     grid-template-columns: 84px minmax(0, 1fr);
   }
-
   .token-box {
-    grid-template-columns:
-      minmax(0, 1fr)
-      60px;
+    grid-template-columns: minmax(0, 1fr) 60px;
   }
-
   .copy-btn {
     min-width: 60px;
     padding-left: 7px;
@@ -864,79 +666,52 @@ h2 {
   }
 }
 
-
 /* ============================================================
    LANDSCAPE MOBILE
    ============================================================ */
 
 @media (max-height: 520px) and (orientation: landscape) {
-
   .request-shell {
     align-items: flex-start;
-
     overflow-y: auto;
   }
-
   .request-card {
     min-height: auto;
   }
-
   .brand-mark {
     width: 36px;
     height: 36px;
-
     margin-bottom: 12px;
   }
-
   .spinner {
     width: 34px;
     height: 34px;
-
     margin-bottom: 10px;
   }
-
-  .steps {
-    gap: 4px;
-  }
-
-  .step {
-    min-height: 34px;
-  }
+  .steps { gap: 4px; }
+  .step { min-height: 34px; }
 }
-
 
 /* ============================================================
    REDUCED MOTION
    ============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
-
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation: none !important;
-
     transition: none !important;
-
     scroll-behavior: auto !important;
   }
 }
-
 
 /* ============================================================
    ANIMATION
    ============================================================ */
 
 @keyframes request-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
-
 
 /* ============================================================
    SELECTION / LONG PRESS PROTECTION
@@ -955,36 +730,25 @@ body,
   -webkit-touch-callout: none;
 }
 
-
 /* Tetap memungkinkan input token dicopy secara normal */
 .token-box input {
   user-select: text;
   -webkit-user-select: text;
 }
 
-
 /* ============================================================
    SAFE AREA
    ============================================================ */
 
 @supports (padding: max(0px)) {
-
   .request-shell {
-    padding-left:
-      max(13px, env(safe-area-inset-left));
-
-    padding-right:
-      max(13px, env(safe-area-inset-right));
+    padding-left: max(13px, env(safe-area-inset-left));
+    padding-right: max(13px, env(safe-area-inset-right));
   }
-
   @media (max-width: 768px) {
-
     .request-shell {
-      padding-left:
-        env(safe-area-inset-left);
-
-      padding-right:
-        env(safe-area-inset-right);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
     }
   }
-   }
+}
