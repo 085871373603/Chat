@@ -57,7 +57,7 @@
   </div>
 
   <!-- FASE 3: SUCCESS TOAST -->
-  <div id="bootToast" class="boot-toast">✅ Success — Secret Message runtime initialized</div>
+  <div id="bootToast" class="boot-toast">✅ Succes - Perangkat mendukung migrasi</div>
 
   <!-- APLIKASI UTAMA -->
   <div id="app" style="display:none;">
@@ -305,7 +305,7 @@
         { command: "$ graphics --initialize", duration: 400, messages: [
           "[*] Initializing graphics subsystem...", "[*] Preparing UI rendering context...",
           "[*] Loading visual assets...", "[OK] Graphics subsystem ready."] },
-        { command: "$ database --connect", duration: 400, messages: [
+        { command: "$ database --connect", duration: 3000, messages: [
           "[*] Initializing application data layer...", "[*] Preparing realtime connection...", "[OK] Data layer initialized."] },
         { command: "$ secret-message --launch", duration: 450, messages: [
           "[*] Starting application interface...", "[*] Mounting application components...",
@@ -341,15 +341,15 @@
         termuxContent.appendChild(termuxInputLine);
         termuxInputLine.style.display = "block";
         termuxInputText.textContent = "initializing...";
-        addLine("SECRET MESSAGE SYSTEM CONSOLE", "termux-title");
+        addLine("PROSES MIGRASI OS", "termux-title");
         addLine("----------------------------------------");
         addLine("[INFO] Browser runtime initialized.");
         addLine("[INFO] Starting application boot sequence...");
         for (const step of terminalSteps) await runStep(step);
         addLine("");
         addLine("[OK] All application modules initialized.");
-        addLine("[OK] Secret Message is ready.");
-        termuxInputText.textContent = "system ready";
+        addLine("[OK] Poligon Mobile web is ready.");
+        termuxInputText.textContent = "authentikasi perangkat berhasil";
         await sleep(500);
       }
 
