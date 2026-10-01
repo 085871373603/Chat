@@ -105,6 +105,16 @@ function beep() {
     o.start(); o.stop(a.currentTime + .25);
   } catch {}
 }
+/* Suara notifikasi: audio/notifikasi.mp3, dengan nada bip sebagai cadangan
+   kalau berkasnya tidak ada atau browser memblokir pemutaran otomatis. */
+const notifSound = new Audio('audio/notifikasi.mp3');
+notifSound.preload = 'auto'; notifSound.volume = 0.9;
+function unlockAudio() { notifSound.play().then(() => { notifSound.pause(); notifSound.currentTime = 0; }).catch(() => {}); }
+['pointerdown', 'touchstart', 'keydown'].forEach(ev => addEventListener(ev, unlockAudio, { once: true, passive: true }));
+function playNotifSound() {
+  try { notifSound.currentTime = 0; notifSound.play().catch(() => beep()); }
+  catch { beep(); }
+}
 function fitViewport() {
   document.documentElement.style.setProperty('--app-h', (window.visualViewport?.height || innerHeight) + 'px');
 }
@@ -264,7 +274,7 @@ function updateNotifBtn() {
   b.disabled = s === 'granted' || s === 'denied' || s === 'unsupported';
 }
 async function notify(title, body, uid) {
-  beep(); try { navigator.vibrate?.(120); } catch {}
+  playNotifSound(); try { navigator.vibrate?.(120); } catch {}
   if (notifState() !== 'granted') return;
   const opt = { body, icon: 'img/icon-192.png', badge: 'img/badge-192.png', tag: 'chat-' + uid, renotify: true, requireInteraction: false, data: { uid } };
   try {
@@ -694,7 +704,7 @@ function buildUI() {
   att.onclick = () => file.click();
   $('emojiButton')?.after(att);
   const ep = el('div', 'emoji-panel hidden'); ep.id = 'emojiPanel';
-  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅').forEach(x => {
+  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅🙈🙉🙊🙂‍↕️😄😾😿🙀🚐🚑🚒🚓🚔🚕🚖🚗🏎🏍✈️🛫').forEach(x => {
     const b = el('button'); b.type = 'button'; b.textContent = x;
     b.onclick = () => { const i = $('messageInput'); i.value += x; i.focus(); };
     ep.append(b);
