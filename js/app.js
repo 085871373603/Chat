@@ -604,7 +604,7 @@ function buildUI() {
   att.onclick = () => file.click();
   $('emojiButton')?.after(att);
   const ep = el('div', 'emoji-panel hidden'); ep.id = 'emojiPanel';
-  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅').forEach(x => {
+  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅🙊🙉🙈🙂‍↕️😄').forEach(x => {
     const b = el('button'); b.type = 'button'; b.textContent = x;
     b.onclick = () => { const i = $('messageInput'); i.value += x; i.focus(); };
     ep.append(b);
