@@ -29,7 +29,7 @@ const ls = {
 };
 const S = { user: null, profile: null, contacts: {}, peers: {}, activeUid: null, chatId: null,
   offContacts: null, offMsgs: null, watch: {}, unread: {}, last: {}, initUid: null,
-  install: null, presenceCancel: null, newPhoto: null, barHidden: false };
+  install: null, presenceCancel: null, newPhoto: null, barHidden: false, replyTo: null };
 const views = { auth: $('authView'), verify: $('verifyView'), chat: $('chatView') };
 const norm = v => String(v ?? '').trim().toLowerCase();
 const clean = (v, m = 4000) => String(v ?? '').trim().slice(0, m);
@@ -255,7 +255,7 @@ async function askNotif() {
   if (notifState() === 'unsupported') return toast('Browser ini tidak mendukung notifikasi.');
   const p = await Notification.requestPermission();
   toast(p === 'granted' ? 'Notifikasi aktif.' : 'Notifikasi tidak diizinkan.');
-  updateNotifBtn();
+  updateNotifBtn(); updateNotifBanner();
 }
 function updateNotifBtn() {
   const b = $('stNotif'); if (!b) return;
@@ -266,11 +266,25 @@ function updateNotifBtn() {
 async function notify(title, body, uid) {
   beep(); try { navigator.vibrate?.(120); } catch {}
   if (notifState() !== 'granted') return;
-  const opt = { body, icon: 'img/icon-192.png', badge: 'img/icon-192.png', tag: 'chat-' + uid, renotify: true, data: { uid } };
+  const opt = { body, icon: 'img/icon-192.png', badge: 'img/badge-192.png', tag: 'chat-' + uid, renotify: true, requireInteraction: false, data: { uid } };
   try {
     const reg = await navigator.serviceWorker?.getRegistration();
     reg ? reg.showNotification(title, opt) : new Notification(title, opt);
   } catch {}
+}
+/* Browser TIDAK mengizinkan notifikasi dipaksa aktif tanpa persetujuan pengguna
+   (ini aturan keamanan di semua browser, bukan batasan aplikasi ini). Yang bisa
+   dilakukan: minta izin otomatis sekali di awal, dan terus mengingatkan lewat
+   banner selama pengguna belum memilih "Izinkan" atau "Blokir". */
+let notifBannerShown = false;
+function maybeAutoAskNotif() {
+  if (notifState() !== 'default') return;
+  askNotif();
+}
+function updateNotifBanner() {
+  const bar = $('notifBar'); if (!bar) return;
+  const show = notifState() === 'default';
+  bar.classList.toggle('hidden', !show);
 }
 function watchChats() {
   for (const uid of Object.keys(S.contacts)) {
@@ -303,6 +317,8 @@ async function openConversation(uid) {
   if (isMobile() && !history.state?.chat) history.pushState({ chat: 1 }, '');
   renderContacts(); listenMessages();
 }
+const RECALL_LIMIT_MS = 60 * 60 * 1000; // batas waktu "tarik pesan": 1 jam sejak terkirim
+let msgCache = {}; // id -> data pesan di percakapan aktif, dipakai untuk balas/tarik/scroll
 function listenMessages() {
   S.offMsgs?.(); const chatId = S.chatId;
   S.offMsgs = onValue(query(ref(db, `chats/${chatId}/messages`), limitToLast(200)), s => {
@@ -311,28 +327,99 @@ function listenMessages() {
     const stick = !list.children.length || list.scrollHeight - list.scrollTop - list.clientHeight < 140;
     list.innerHTML = '';
     const arr = Object.entries(s.val() || {}).map(([id, m]) => ({ id, ...m })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    msgCache = {}; arr.forEach(m => { msgCache[m.id] = m; });
     const fmtDay = ts => { const d = new Date(Number(ts) || Date.now()); return d.toDateString() === new Date().toDateString() ? 'Hari ini' : new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }).format(d); };
     let day = '';
     for (const m of arr) {
       const d = new Date(Number(m.createdAt) || Date.now()).toDateString();
       if (d !== day) { day = d; const sep = el('div', 'day-sep'); sep.textContent = fmtDay(m.createdAt); list.append(sep); }
-      const row = el('div', 'message-row' + (m.senderId === S.user.uid ? ' mine' : '')), bub = el('div', 'message-bubble');
-      const t = String(m.text || '');
-      if (t.startsWith('[img]') && GH_IMG.test(t.slice(5))) {
-        const im = el('img', 'msg-img'); im.loading = 'lazy'; im.alt = 'Foto'; im.src = t.slice(5);
-        im.onclick = () => lightbox(im.src);
-        im.onload = () => { if (stick) list.scrollTop = list.scrollHeight; };
-        bub.append(im);
-      } else { const x = el('div', 'message-text'); x.textContent = t; bub.append(x); }
+      const mine = m.senderId === S.user.uid;
+      const row = el('div', 'message-row' + (mine ? ' mine' : '')); row.dataset.id = m.id;
+      const bub = el('div', 'message-bubble' + (m.deleted ? ' recalled' : ''));
+
+      if (m.replyTo && !m.deleted) {
+        const q = el('div', 'quote-block');
+        q.innerHTML = `<strong>${m.replyTo.senderId === S.user.uid ? 'Anda' : (S.peers[m.replyTo.senderId]?.displayName || 'Pengguna')}</strong><span></span>`;
+        q.querySelector('span').textContent = m.replyTo.text || '';
+        q.onclick = () => { const t = list.querySelector(`[data-id="${m.replyTo.id}"]`); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); t.classList.add('flash'); setTimeout(() => t.classList.remove('flash'), 1200); } };
+        bub.append(q);
+      }
+
+      if (m.deleted) {
+        const x = el('div', 'message-text recalled-text'); x.textContent = '🚫 Pesan ini telah ditarik'; bub.append(x);
+      } else {
+        const t = String(m.text || '');
+        if (t.startsWith('[img]') && GH_IMG.test(t.slice(5))) {
+          const im = el('img', 'msg-img'); im.loading = 'lazy'; im.alt = 'Foto'; im.src = t.slice(5);
+          im.onclick = () => lightbox(im.src);
+          im.onload = () => { if (stick) list.scrollTop = list.scrollHeight; };
+          bub.append(im);
+        } else { const x = el('div', 'message-text'); x.textContent = t; bub.append(x); }
+      }
+
       const meta = el('div', 'message-meta'); meta.textContent = formatTime(m.createdAt);
       bub.append(meta); row.append(bub); list.append(row);
+      attachLongPress(row, m, mine);
     }
     if (stick || arr.at(-1)?.senderId === S.user.uid) requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
     if (!document.hidden && S.unread[S.activeUid]) { S.unread[S.activeUid] = 0; renderContacts(); updateBadge(); }
   }, () => toast('Pesan tidak dapat dimuat.'));
 }
+
+/* ===== Tekan-lama pada pesan: menu Balas / Salin / Tarik ===== */
+function attachLongPress(row, m, mine) {
+  let timer, moved = false, sx = 0, sy = 0;
+  const start = e => {
+    moved = false; const p = e.touches ? e.touches[0] : e;
+    sx = p.clientX; sy = p.clientY;
+    timer = setTimeout(() => { if (!moved) openMsgMenu(m, mine); }, 420);
+  };
+  const move = e => {
+    const p = e.touches ? e.touches[0] : e;
+    if (Math.abs(p.clientX - sx) > 10 || Math.abs(p.clientY - sy) > 10) { moved = true; clearTimeout(timer); }
+  };
+  const end = () => clearTimeout(timer);
+  row.addEventListener('touchstart', start, { passive: true });
+  row.addEventListener('touchmove', move, { passive: true });
+  row.addEventListener('touchend', end);
+  row.addEventListener('mousedown', start);
+  row.addEventListener('mousemove', move);
+  row.addEventListener('mouseup', end);
+  row.addEventListener('mouseleave', end);
+  row.addEventListener('contextmenu', e => { e.preventDefault(); openMsgMenu(m, mine); });
+}
+function openMsgMenu(m, mine) {
+  const sheet = $('msgMenu'); if (!sheet) return;
+  const canRecall = mine && !m.deleted && (Date.now() - (Number(m.createdAt) || 0)) < RECALL_LIMIT_MS;
+  const canCopy = !m.deleted && !String(m.text || '').startsWith('[img]');
+  sheet.innerHTML = '';
+  const addBtn = (label, fn) => { const b = el('button'); b.type = 'button'; b.textContent = label; b.onclick = () => { sheet.classList.add('hidden'); fn(); }; sheet.append(b); };
+  if (!m.deleted) addBtn('↩ Balas', () => setReply(m));
+  if (canCopy) addBtn('📋 Salin teks', () => { navigator.clipboard?.writeText(String(m.text || '')).then(() => toast('Teks disalin.')).catch(() => {}); });
+  if (canRecall) addBtn('🗑 Tarik pesan', () => recallMessage(m.id));
+  else if (mine && !m.deleted) addBtn('🗑 Tarik pesan (lewat batas 1 jam)', () => toast('Pesan hanya bisa ditarik dalam 1 jam setelah terkirim.'));
+  addBtn('✖ Batal', () => {});
+  sheet.classList.remove('hidden');
+}
+function setReply(m) {
+  S.replyTo = { id: m.id, text: m.deleted ? '' : preview(m.text), senderId: m.senderId };
+  const bar = $('replyBar'); if (!bar) return;
+  bar.querySelector('.rb-name').textContent = m.senderId === S.user.uid ? 'Anda' : (S.peers[m.senderId]?.displayName || 'Pengguna');
+  bar.querySelector('.rb-text').textContent = S.replyTo.text || '';
+  bar.classList.remove('hidden');
+  $('messageInput')?.focus();
+}
+function clearReply() { S.replyTo = null; $('replyBar')?.classList.add('hidden'); }
+async function recallMessage(id) {
+  try { await waitFor(update(ref(db, `chats/${S.chatId}/messages/${id}`), { deleted: true, text: '', replyTo: null, deletedAt: serverTimestamp() })); }
+  catch (e) { toast('Gagal menarik pesan.'); }
+}
+
 async function pushMsg(text) {
-  await waitFor(set(push(ref(db, `chats/${S.chatId}/messages`)), { senderId: S.user.uid, text, createdAt: serverTimestamp() }));
+  const payload = { senderId: S.user.uid, text, createdAt: serverTimestamp() };
+  if (S.replyTo) payload.replyTo = S.replyTo;
+  await waitFor(set(push(ref(db, `chats/${S.chatId}/messages`)), payload));
+  clearReply();
 }
 async function sendMessage() {
   const i = $('messageInput'), text = clean(i.value);
@@ -349,7 +436,7 @@ async function sendImage(file) {
   catch (e) { toast(e.message || 'Gagal mengirim gambar.'); }
 }
 function clearActive() {
-  S.offMsgs?.(); S.offMsgs = null; S.activeUid = null; S.chatId = null;
+  S.offMsgs?.(); S.offMsgs = null; S.activeUid = null; S.chatId = null; clearReply(); msgCache = {};
   views.chat?.classList.remove('mobile-open');
   $('activeConversation')?.classList.add('hidden');
   $('welcomeConversation')?.classList.remove('hidden');
@@ -381,8 +468,10 @@ async function initChat(user) {
   if (!user.emailVerified) throw new Error('Email belum terverifikasi.');
   if (S.initUid === user.uid) return;
   S.initUid = user.uid;
-  try { await waitFor(ensureProfile(user), 20000); setView('chat'); listenContacts(); setPresence(true); updateInstallUI(); }
-  catch (e) { S.initUid = null; throw e; }
+  try {
+    await waitFor(ensureProfile(user), 20000); setView('chat'); listenContacts(); setPresence(true); updateInstallUI();
+    updateNotifBtn(); updateNotifBanner(); maybeAutoAskNotif();
+  } catch (e) { S.initUid = null; throw e; }
 }
 async function logout() {
   closeMenu(); setPresence(false); cleanup();
@@ -476,6 +565,7 @@ $('accountButton')?.addEventListener('click', e => {
 });
 $('accountMenu')?.addEventListener('click', e => e.stopPropagation());
 document.addEventListener('click', closeMenu);
+document.addEventListener('click', e => { const mm = $('msgMenu'); if (mm && !mm.classList.contains('hidden') && !mm.contains(e.target)) mm.classList.add('hidden'); });
 $('menuTheme')?.addEventListener('click', () => { const n = getTheme() === 'dark' ? 'light' : 'dark'; applyTheme(n); toast(n === 'dark' ? 'Mode gelap aktif.' : 'Mode terang aktif.'); closeMenu(); });
 $('menuLogout')?.addEventListener('click', logout);
 
@@ -604,7 +694,7 @@ function buildUI() {
   att.onclick = () => file.click();
   $('emojiButton')?.after(att);
   const ep = el('div', 'emoji-panel hidden'); ep.id = 'emojiPanel';
-  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅🙊🙉🙈🙂‍↕️😄').forEach(x => {
+  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅').forEach(x => {
     const b = el('button'); b.type = 'button'; b.textContent = x;
     b.onclick = () => { const i = $('messageInput'); i.value += x; i.focus(); };
     ep.append(b);
@@ -619,6 +709,24 @@ function buildUI() {
   document.body.append(bar);
   $('installGo').onclick = doInstall;
   $('installX').onclick = () => { S.barHidden = true; updateInstallUI(); };
+
+  /* banner pengingat notifikasi (selama izin masih "belum dipilih") */
+  const nb = el('div', 'install-bar hidden'); nb.id = 'notifBar';
+  nb.innerHTML = '<img src="img/icon-192.png" alt=""><div><strong>Aktifkan notifikasi</strong><span>Supaya tahu saat ada pesan masuk.</span></div><button class="primary" type="button" id="notifGo">Aktifkan</button><button class="action-icon" type="button" id="notifX" aria-label="Tutup">×</button>';
+  document.body.append(nb);
+  $('notifGo').onclick = askNotif;
+  $('notifX').onclick = () => nb.classList.add('hidden');
+
+  /* bar balasan di atas composer */
+  const rb = el('div', 'reply-bar hidden'); rb.id = 'replyBar';
+  rb.innerHTML = '<div class="rb-line"><div class="rb-meta"><strong class="rb-name"></strong><span class="rb-text"></span></div><button class="action-icon" type="button" id="replyCancel" aria-label="Batal balas">×</button></div>';
+  $('messageForm')?.before(rb);
+  $('replyCancel').onclick = clearReply;
+
+  /* menu aksi pesan (tekan-lama) */
+  const mm = el('div', 'msg-menu hidden'); mm.id = 'msgMenu';
+  document.body.append(mm);
+
   updateInstallUI(); applyTheme(getTheme());
 }
 buildUI();
