@@ -294,7 +294,7 @@
       app.style.display = "none";
 
       const terminalSteps = [
-        { command: "$ auth-service --initialize", duration: 350, messages: [
+        { command: "$ auth-service --initialize", duration: 3500, messages: [
           "[*] Initializing authentication service...", "[*] Loading security module...", "[OK] Authentication service ready."] },
         { command: "$ runtime --check android_aarch64", duration: 450, messages: [
           "[*] Detecting runtime environment...", "    -> Platform: Android", "    -> Architecture: ARM64",
@@ -302,7 +302,7 @@
         { command: "$ secret-message --prepare", duration: 400, messages: [
           "[*] Preparing Secret Message application...", "[*] Loading application configuration...",
           "[*] Loading interface resources...", "[OK] Configuration loaded."] },
-        { command: "$ graphics --initialize", duration: 400, messages: [
+        { command: "$ graphics --initialize", duration: 4000, messages: [
           "[*] Initializing graphics subsystem...", "[*] Preparing UI rendering context...",
           "[*] Loading visual assets...", "[OK] Graphics subsystem ready."] },
         { command: "$ database --connect", duration: 3000, messages: [
