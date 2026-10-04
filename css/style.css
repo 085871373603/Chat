@@ -414,6 +414,90 @@ input::placeholder {
 }
 
 /* =========================================================
+   🛡️ 20. PROTEKSI GAMBAR
+   ---------------------------------------------------------
+   Mencegah drag & drop, long-press simpan gambar (mobile),
+   dan seleksi gambar.
+   ========================================================= */
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Gambar non-interaktif: blok semua interaksi pointer */
+.welcome-logo,
+.auth-brand img,
+.termux-header img,
+.send-btn img,
+.bubble-btn img {
+  pointer-events: none;
+}
+
+/* Foto profil/kontak (klik tetap jalan, drag & long-press diblok) */
+.me-profile img,
+.peer-profile img,
+.contact-item img,
+.popover-user img {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+/* Lapisan transparan penghalang "Save image as" pada logo besar */
+.welcome-pane {
+  position: relative;
+}
+.welcome-pane::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: transparent;
+}
+
+
+/* =========================================================
+   🏷️ 21. FOOTER: SETUP CORE ARINEX
+   ---------------------------------------------------------
+   Footer dibuat murni dengan CSS (pseudo-element), tampil di
+   bagian bawah sidebar chat dan layar login/register.
+   ========================================================= */
+.sidebar::after,
+.screen::after {
+  content: "Setup Core Arinex";
+  display: block;
+  flex-shrink: 0;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: center;
+  font-family: 'Anonymous Pro', monospace;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: var(--text-sub);
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  pointer-events: none;
+}
+
+/* Di layar login, footer menempel di bawah layar */
+.screen::after {
+  margin-top: auto;
+  background: transparent;
+  border-top: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar::after,
+  .screen::after {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+}
+
+/* =========================================================
    🔐 9. AUTH / LOGIN / REGISTER
    ========================================================= */
 .screen {
