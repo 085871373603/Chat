@@ -1209,7 +1209,7 @@ h1, h2 {
      TERMINAL MOBILE
      ======================================================= */
   .boot-overlay {
-    padding: 10px;
+    padding: 100px;
   }
 
   .termux-window {
