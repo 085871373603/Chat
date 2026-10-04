@@ -1216,7 +1216,7 @@ h1, h2 {
     width: 96%;
     height: 330px;
     max-width: none;
-    box-shadow: 4px 4px 0 rgba(0,0,0,0.25);
+    box-shadow: 1px 1px 0 rgba(0,0,0,0.25);
   }
 
   .termux-header {
