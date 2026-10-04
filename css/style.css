@@ -1209,11 +1209,11 @@ h1, h2 {
      TERMINAL MOBILE
      ======================================================= */
   .boot-overlay {
-    padding: 100px;
+    padding: 5px;
   }
 
   .termux-window {
-    width: 96%;
+    width: 960%;
     height: 330px;
     max-width: none;
     box-shadow: 4px 4px 0 rgba(0,0,0,0.25);
