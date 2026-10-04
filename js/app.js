@@ -19,6 +19,10 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 const persistenceReady = setPersistence(auth, browserLocalPersistence);
 
+   document.addEventListener('contextmenu', function (e) {
+     if (e.target.tagName === 'IMG') e.preventDefault();
+   });
+
 /* ================= HELPER ================= */
 const $ = id => document.getElementById(id);
 const el = (t, c) => { const e = document.createElement(t); if (c) e.className = c; return e; };
