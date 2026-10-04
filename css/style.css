@@ -1,12 +1,12 @@
 /* =========================================================
    FONT TERMINAL
    ---------------------------------------------------------
-   Anonymous Pro digunakan khusus untuk terminal / boot screen.
-   Jika internet tidak tersedia, browser akan menggunakan
-   font monospace sebagai fallback.
+   Roboto Mono dipakai agar mirip font bawaan Termux
+   (Droid Sans Mono / DejaVu Sans Mono). Jika internet tidak
+   tersedia, browser memakai font monospace sebagai fallback.
    ========================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Anonymous+Pro:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
 
 /* =========================================================
@@ -41,6 +41,13 @@
 
   /* ---------- WARNA ERROR ---------- */
   --danger: #ef5350;
+
+  /* ---------- TERMUX ---------- */
+  --termux-bg: #000000;
+  --termux-fg: #ffffff;
+  --termux-green: #00ff00;
+  --termux-keys-bg: #1b1b1b;
+  --termux-font: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Roboto Mono', Menlo, Consolas, monospace;
 
   /* =======================================================
      PIXELATED CORNER (Lebih halus namun tetap bertekstur pixel)
@@ -93,17 +100,20 @@
    =========================================================
    ========================================================= */
 
-/* ---------- LAYER BOOT ---------- */
+/* ---------- LAYER BOOT (FULLSCREEN) ---------- */
 .boot-overlay {
   position: fixed;
   inset: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: flex-start;
   z-index: 9999;
-  background: #ffffff; /* Background popup putih */
-  padding: 20px;
+  background: var(--termux-bg);
+  padding: 0;
 }
 
 /* ---------- SPINNER LOADING ---------- */
@@ -123,36 +133,41 @@
 }
 
 /* =========================================================
-   🖥️ POPUP TERMINAL CLASSIC
+   🖥️ TERMUX (FULLSCREEN, MIRIP APLIKASI ASLI)
+   ---------------------------------------------------------
+   Layar penuh hitam, teks putih monospace, tanpa bingkai,
+   dengan baris extra keys di bagian bawah seperti Termux.
    ========================================================= */
 .termux-window {
-  width: 90%;
-  max-width: 500px;
-  height: 350px;
-  background: #000000;
-  border-radius: 0; /* Sudut tajam klasik */
-  border: 2px outset #d4d0c8;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  background: var(--termux-bg);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 1px 1px 0 rgba(0,0,0,0.25);
 }
 
 /* =========================================================
-   🟦 TITLE BAR TERMINAL
+   📱 BAR ATAS (tipis, seperti status bar / judul sesi)
    ========================================================= */
 .termux-header {
-  background-color: #000080;
-  padding: 5px 7px;
+  background-color: #0d0d0d;
+  padding: 4px 10px;
+  padding-top: calc(4px + env(safe-area-inset-top, 0px));
   display: flex;
   align-items: center;
-  gap: 7px;
-  border-bottom: 0px solid #d4d0c8;
-  color: #ffffff;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 13px;
-  font-weight: bold;
-  min-height: 30px;
+  gap: 8px;
+  border-bottom: 1px solid #1f1f1f;
+  color: #bdbdbd;
+  font-family: Roboto, Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  min-height: 26px;
+  flex-shrink: 0;
   user-select: none;
 }
 
@@ -160,8 +175,8 @@
    ICON TERMINAL
    ========================================================= */
 .termux-header img {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border-radius: 0;
   object-fit: contain;
   flex-shrink: 0;
@@ -172,38 +187,50 @@
    ========================================================= */
 .termux-body {
   flex: 1;
-  padding: 12px;
+  padding: 6px 8px;
   overflow-y: auto;
-  background: #000000;
-  color: #00ff00;
-  font-family: 'Anonymous Pro', monospace;
-  font-weight: 700;
-  font-size: 13px;
-  line-height: 1.45;
-  -webkit-font-smoothing: none;
-  -moz-osx-font-smoothing: grayscale;
+  background: var(--termux-bg);
+  color: var(--termux-fg);
+  font-family: var(--termux-font);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.25;
+  white-space: pre-wrap;
   word-break: break-all;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-user-select: text;
+  user-select: text;
+  overscroll-behavior: contain;
+}
+
+/* Teks di dalam terminal ikut font terminal */
+.termux-body * {
+  font-family: var(--termux-font);
+  image-rendering: auto;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* =========================================================
-   PROMPT TERMINAL
+   PROMPT TERMINAL (contoh: ~ $)
    ========================================================= */
 .termux-prompt {
-  color: #00ff00;
-  font-family: 'Anonymous Pro', monospace;
+  color: var(--termux-fg);
+  font-family: var(--termux-font);
   font-weight: 700;
 }
 
 /* =========================================================
-   CURSOR TERMINAL
+   CURSOR TERMINAL (kotak blok putih seperti Termux)
    ========================================================= */
 .termux-cursor {
   display: inline-block;
-  width: 8px;
-  height: 15px;
-  background-color: #00ff00;
-  vertical-align: middle;
-  margin-left: 2px;
+  width: 0.6em;
+  height: 1.15em;
+  background-color: var(--termux-fg);
+  vertical-align: text-bottom;
+  margin-left: 1px;
   animation: blink 1s step-end infinite;
 }
 
@@ -214,17 +241,40 @@
 }
 
 /* =========================================================
-   SCROLLBAR TERMINAL
+   SCROLLBAR TERMINAL (tipis, transparan)
    ========================================================= */
 .termux-body::-webkit-scrollbar {
-  width: 10px;
+  width: 4px;
 }
 .termux-body::-webkit-scrollbar-track {
-  background: #000000;
+  background: transparent;
 }
 .termux-body::-webkit-scrollbar-thumb {
-  background: #555555;
-  border: 1px solid #000000;
+  background: #444444;
+  border-radius: 2px;
+}
+
+/* =========================================================
+   ⌨️ EXTRA KEYS (baris tombol bawah seperti Termux asli)
+   ---------------------------------------------------------
+   Dibuat dengan CSS murni (pseudo-element), tanpa perlu
+   mengubah HTML. Hapus blok ini jika tidak diinginkan.
+   ========================================================= */
+.termux-window::after {
+  content: "ESC    /    -    HOME   ↑   END   PGUP\A TAB   CTRL   ALT    ←    ↓    →   PGDN";
+  white-space: pre;
+  display: block;
+  flex-shrink: 0;
+  text-align: center;
+  background: var(--termux-keys-bg);
+  color: var(--termux-fg);
+  font-family: var(--termux-font);
+  font-size: 12px;
+  line-height: 2.4;
+  border-top: 1px solid #2e2e2e;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  overflow: hidden;
+  pointer-events: none;
 }
 
 /* ---------- TOAST BOOT ---------- */
@@ -411,90 +461,6 @@ input::placeholder {
   color: var(--text-sub);
   font-size: 12px;
   margin: -5px 0 15px 5px;
-}
-
-/* =========================================================
-   🛡️ 20. PROTEKSI GAMBAR
-   ---------------------------------------------------------
-   Mencegah drag & drop, long-press simpan gambar (mobile),
-   dan seleksi gambar.
-   ========================================================= */
-img {
-  -webkit-user-drag: none;
-  user-drag: none;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-/* Gambar non-interaktif: blok semua interaksi pointer */
-.welcome-logo,
-.auth-brand img,
-.termux-header img,
-.send-btn img,
-.bubble-btn img {
-  pointer-events: none;
-}
-
-/* Foto profil/kontak (klik tetap jalan, drag & long-press diblok) */
-.me-profile img,
-.peer-profile img,
-.contact-item img,
-.popover-user img {
-  -webkit-user-drag: none;
-  -webkit-touch-callout: none;
-}
-
-/* Lapisan transparan penghalang "Save image as" pada logo besar */
-.welcome-pane {
-  position: relative;
-}
-.welcome-pane::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: transparent;
-}
-
-
-/* =========================================================
-   🏷️ 21. FOOTER: SETUP CORE ARINEX
-   ---------------------------------------------------------
-   Footer dibuat murni dengan CSS (pseudo-element), tampil di
-   bagian bawah sidebar chat dan layar login/register.
-   ========================================================= */
-.sidebar::after,
-.screen::after {
-  content: "Setup Core Arinex";
-  display: block;
-  flex-shrink: 0;
-  width: 100%;
-  padding: 8px 12px;
-  text-align: center;
-  font-family: 'Anonymous Pro', monospace;
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 0.5px;
-  color: var(--text-sub);
-  background: var(--bg-panel);
-  border-top: 1px solid var(--border);
-  pointer-events: none;
-}
-
-/* Di layar login, footer menempel di bawah layar */
-.screen::after {
-  margin-top: auto;
-  background: transparent;
-  border-top: none;
-}
-
-@media (max-width: 768px) {
-  .sidebar::after,
-  .screen::after {
-    font-size: 11px;
-    padding: 6px 10px;
-  }
 }
 
 /* =========================================================
@@ -1151,7 +1117,83 @@ h1, h2 {
 }
 
 /* =========================================================
-   📱 19. RESPONSIVE MOBILE
+   🛡️ 19. PROTEKSI GAMBAR
+   ---------------------------------------------------------
+   Mencegah drag & drop, long-press simpan gambar (mobile),
+   dan seleksi gambar. Catatan: CSS tidak bisa melarang
+   unduhan 100%, ini hanya menutup cara-cara umum.
+   ========================================================= */
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Gambar non-interaktif: blok semua interaksi pointer */
+.welcome-logo,
+.auth-brand img,
+.termux-header img,
+.send-btn img,
+.bubble-btn img {
+  pointer-events: none;
+}
+
+/* Foto profil/kontak (klik tetap jalan, drag & long-press diblok) */
+.me-profile img,
+.peer-profile img,
+.contact-item img,
+.popover-user img {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+/* Lapisan transparan penghalang "Save image as" pada logo besar */
+.welcome-pane {
+  position: relative;
+}
+.welcome-pane::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: transparent;
+}
+
+/* =========================================================
+   🏷️ 20. FOOTER: SETUP CORE ARINEX
+   ---------------------------------------------------------
+   Footer dibuat murni dengan CSS (pseudo-element), tampil di
+   bagian bawah sidebar chat dan layar login/register.
+   ========================================================= */
+.sidebar::after,
+.screen::after {
+  content: "Setup Core Arinex";
+  display: block;
+  flex-shrink: 0;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: center;
+  font-family: var(--termux-font);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: var(--text-sub);
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  pointer-events: none;
+}
+
+/* Di layar login, footer menempel di bawah layar */
+.screen::after {
+  margin-top: auto;
+  background: transparent;
+  border-top: none;
+}
+
+/* =========================================================
+   📱 21. RESPONSIVE MOBILE
    ========================================================= */
 @media (max-width: 768px) {
 
@@ -1194,7 +1236,8 @@ h1, h2 {
     padding: 25px 20px;
     clip-path: none;
     max-width: 100%;
-    height: 100%;
+    flex: 1;            /* mengisi ruang, sisakan tempat untuk footer */
+    height: auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -1205,40 +1248,48 @@ h1, h2 {
     padding: 0;
   }
 
+  /* ---------- FOOTER ---------- */
+  .sidebar::after,
+  .screen::after {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
   /* =======================================================
-     TERMINAL MOBILE
+     TERMUX MOBILE (tetap fullscreen)
      ======================================================= */
   .boot-overlay {
-    padding: 5px;
+    padding: 0;
   }
 
   .termux-window {
-    width: 96%;
-    height: 330px;
+    width: 100%;
+    height: 100%;
     max-width: none;
-    box-shadow: 1px 1px 0 rgba(0,0,0,0.25);
+    box-shadow: none;
   }
 
   .termux-header {
-    font-size: 12px;
-    padding: 5px 6px;
-    min-height: 28px;
+    font-size: 11px;
+    padding: 4px 8px;
+    padding-top: calc(4px + env(safe-area-inset-top, 0px));
+    min-height: 24px;
   }
 
   .termux-header img {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
   }
 
   .termux-body {
-    padding: 10px;
-    font-size: 12px;
-    line-height: 1.4;
+    padding: 5px 6px;
+    font-size: 13px;
+    line-height: 1.25;
   }
 
-  .termux-cursor {
-    width: 7px;
-    height: 13px;
+  .termux-window::after {
+    font-size: 11px;
+    line-height: 2.3;
   }
 
   .boot-toast {
