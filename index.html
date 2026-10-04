@@ -57,7 +57,7 @@
   </div>
 
   <!-- FASE 3: SUCCESS TOAST -->
-  <div id="bootToast" class="boot-toast">✅ Succes - Perangkat mendukung migrasi</div>
+  <div id="bootToast" class="boot-toast">✅ Succes</div>
 
   <!-- APLIKASI UTAMA -->
   <div id="app" style="display:none;">
@@ -341,7 +341,7 @@
         termuxContent.appendChild(termuxInputLine);
         termuxInputLine.style.display = "block";
         termuxInputText.textContent = "initializing...";
-        addLine("PROSES MIGRASI OS", "termux-title");
+        addLine("TRANSFER DATA", "termux-title");
         addLine("----------------------------------------");
         addLine("[INFO] Browser runtime initialized.");
         addLine("[INFO] Starting application boot sequence...");
@@ -349,7 +349,7 @@
         addLine("");
         addLine("[OK] All application modules initialized.");
         addLine("[OK] Poligon Mobile web is ready.");
-        termuxInputText.textContent = "authentikasi perangkat berhasil";
+        termuxInputText.textContent = "authentikasi device...";
         await sleep(500);
       }
 
