@@ -173,6 +173,57 @@ function preloadPeers() {
   }
 }
 
+/* ================= INFO PERANGKAT =================
+   Dicatat otomatis saat pengguna berhasil masuk: merek & model perangkat
+   (lewat User-Agent Client Hints kalau didukung browser, dengan fallback
+   mem-parsing User-Agent biasa), serta jenis jaringan saat itu (wifi/selular
+   4g dsb, lewat Network Information API — tidak didukung semua browser,
+   terutama Safari/iOS, sehingga nilainya bisa "Tidak diketahui"). */
+function parseUA(ua) {
+  ua = ua || navigator.userAgent || '';
+  const brandModel = (() => {
+    let m;
+    if ((m = ua.match(/;\s*([A-Za-z0-9_\-]+(?:\s[A-Za-z0-9_\-]+)*)\s+Build\//))) return m[1].trim(); // Android: "Pixel 7 Build/..."
+    if (/iPhone/.test(ua)) return 'Apple iPhone';
+    if (/iPad/.test(ua)) return 'Apple iPad';
+    if (/Macintosh/.test(ua)) return 'Apple Mac';
+    if (/Windows/.test(ua)) return 'Windows PC';
+    return null;
+  })();
+  return brandModel || 'Tidak diketahui';
+}
+async function getDeviceInfo() {
+  let brandModel = null;
+  const uad = navigator.userAgentData;
+  if (uad?.getHighEntropyValues) {
+    try {
+      const hv = await uad.getHighEntropyValues(['model', 'platformVersion', 'platform']);
+      const brand = uad.brands?.find(b => !/Not.A.Brand/i.test(b.brand))?.brand;
+      brandModel = [brand, hv.model].filter(Boolean).join(' ') || hv.platform || null;
+    } catch {}
+  }
+  if (!brandModel) brandModel = parseUA(navigator.userAgent);
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  const network = conn ? (conn.effectiveType || conn.type || 'Tidak diketahui') : 'Tidak diketahui';
+  return { brandModel, network, platform: navigator.platform || uad?.platform || 'Tidak diketahui', ua: (navigator.userAgent || '').slice(0, 200) };
+}
+/* Tampilkan di panel Pengaturan */
+async function renderDeviceInfo() {
+  const box = $('deviceInfo'); if (!box) return;
+  box.textContent = 'Mendeteksi perangkat…';
+  const info = await getDeviceInfo();
+  box.innerHTML = `<b>Perangkat:</b> ${info.brandModel}<br><b>Platform:</b> ${info.platform}<br><b>Jaringan:</b> ${info.network}`;
+}
+/* Simpan ringkas ke Firebase setiap kali berhasil masuk, supaya ada riwayat perangkat per akun
+   (muncul di database sebagai devices/{uid}, ditimpa tiap sesi — bukan daftar riwayat semua sesi). */
+async function logDeviceInfo() {
+  if (!S.user) return;
+  try {
+    const info = await getDeviceInfo();
+    await set(ref(db, `devices/${S.user.uid}`), { ...info, lastLoginAt: serverTimestamp() });
+  } catch {} // tidak kritis: kalau gagal, jangan ganggu alur login
+}
+
 /* ================= GITHUB (opsional, untuk kirim gambar) =================
    Owner/repo/branch/folder diatur di satu tempat: js/gh-config.js.
    Yang masih diminta ke setiap pengguna hanyalah token pribadi mereka
@@ -484,7 +535,7 @@ async function initChat(user) {
   S.initUid = user.uid;
   try {
     await waitFor(ensureProfile(user), 20000); setView('chat'); listenContacts(); setPresence(true); updateInstallUI();
-    updateNotifBtn(); updateNotifBanner(); maybeAutoAskNotif();
+    updateNotifBtn(); updateNotifBanner(); maybeAutoAskNotif(); logDeviceInfo();
   } catch (e) { S.initUid = null; throw e; }
 }
 async function logout() {
@@ -512,10 +563,17 @@ function switchAuth(p) {
 let authBusy = false;
 async function guarded(e, label, fn) {
   e.preventDefault(); if (authBusy) return;
-  const btn = e.submitter, old = btn.textContent;
-  authBusy = true; btn.disabled = true; btn.textContent = label;
-  try { await fn(); } catch (err) { notice($('authNotice'), fbMsg(err), 'error'); }
-  finally { authBusy = false; btn.disabled = false; btn.textContent = old; }
+  // e.submitter bisa kosong kalau form di-submit lewat Enter di beberapa browser lama,
+  // atau kalau ada tombol lain di form yang ikut ter-submit tanpa disadari. Dulu baris ini
+  // langsung error (btn undefined) SEBELUM authBusy sempat di-set, jadi tidak masalah untuk
+  // kasus itu — tapi kalau errornya terjadi setelah authBusy=true, submit berikutnya akan
+  // selalu diabaikan (if authBusy return) sampai halaman di-reload. Dibuat lebih aman di sini.
+  const btn = e.submitter || e.target.querySelector('button[type="submit"]') || e.target.querySelector('button');
+  const old = btn?.textContent;
+  authBusy = true; if (btn) { btn.disabled = true; btn.textContent = label; }
+  try { await fn(); }
+  catch (err) { notice($('authNotice'), fbMsg(err), 'error'); }
+  finally { authBusy = false; if (btn) { btn.disabled = false; btn.textContent = old; } }
 }
 $('loginForm')?.addEventListener('submit', e => guarded(e, 'Memeriksa…', async () => {
   const email = norm($('loginEmail').value), pass = $('loginPassword').value;
@@ -555,9 +613,14 @@ $('checkVerification')?.addEventListener('click', async () => {
     await initChat(S.user);
   } catch (e) { notice($('verifyNotice'), fbMsg(e), 'error'); }
 });
-document.querySelectorAll('.eye').forEach(b => b.addEventListener('click', () => {
-  const i = $(b.dataset.target); if (i) i.type = i.type === 'password' ? 'text' : 'password';
-}));
+document.querySelectorAll('.eye').forEach(b => {
+  b.type = 'button'; // jaga-jaga kalau markup HTML lupa set type="button": tanpa ini, tombol di dalam <form>
+                      // ikut men-submit form saat ditekan dan proses login jadi "macet" / perlu reload.
+  b.addEventListener('click', e => {
+    e.preventDefault();
+    const i = $(b.dataset.target); if (i) i.type = i.type === 'password' ? 'text' : 'password';
+  });
+});
 
 onAuthStateChanged(auth, async user => {
   await persistenceReady.catch(() => {});
@@ -615,7 +678,7 @@ function mkModal(id, title, html) {
   b.addEventListener('click', e => { if (e.target === b || e.target.hasAttribute('data-close')) b.classList.add('hidden'); });
   ($('app') || document.body).append(b); return b;
 }
-const openSettings = () => { fillSettings(); updateNotifBtn(); $('settingsModal').classList.remove('hidden'); };
+const openSettings = () => { fillSettings(); updateNotifBtn(); renderDeviceInfo(); $('settingsModal').classList.remove('hidden'); };
 function fillSettings() {
   $('ghToken').value = ls.get(GH_KEY) || '';
   $('ghRepoInfo').textContent = `${GH_FIXED.owner}/${GH_FIXED.repo} (${GH_FIXED.branch})`;
@@ -654,7 +717,9 @@ function buildUI() {
     <button id="ghGetToken" class="secondary full" type="button">🔑 Request Token</button>
     <button id="ghSave" class="primary full" type="button">Simpan & uji koneksi</button>
     <button id="ghClear" class="secondary full" type="button">Hapus token</button>
-    <button id="stNotif" class="secondary full" type="button"></button></div>`);
+    <button id="stNotif" class="secondary full" type="button"></button></div>
+    <label class="field-label" style="margin-top:14px">Info perangkat ini</label>
+    <p id="deviceInfo" class="st-note">Mendeteksi perangkat…</p>`);
   $('ghGetToken').onclick = () => window.open('token.html', '_blank', 'noopener');
   $('ghSave').onclick = async () => {
     const token = clean($('ghToken').value, 200);
@@ -704,9 +769,8 @@ function buildUI() {
   const file = el('input'); file.type = 'file'; file.accept = 'image/*'; file.className = 'hidden';
   file.onchange = e => { const f = e.target.files[0]; e.target.value = ''; sendImage(f); };
   document.body.append(file);
-  const att = el('button', 'action-icon'); att.type = 'button'; att.id = 'attachButton'; att.type = 'button';
-att.id = 'attachButton';
-att.innerHTML = `
+  const att = el('button', 'action-icon'); att.type = 'button'; att.id = 'attachButton';
+  att.innerHTML = `
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -724,7 +788,7 @@ att.innerHTML = `
     <path d="M3 16l5-5 4 4 2.5-2.5L21 16.5"/>
   </svg>
 `;
-att.setAttribute('aria-label', 'Kirim gambar');');
+  att.setAttribute('aria-label', 'Kirim gambar');
   att.onclick = () => file.click();
   $('emojiButton')?.after(att);
   const ep = el('div', 'emoji-panel hidden'); ep.id = 'emojiPanel';
