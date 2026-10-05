@@ -274,7 +274,7 @@ async function askNotif() {
 function updateNotifBtn() {
   const b = $('stNotif'); if (!b) return;
   const s = notifState();
-  b.textContent = s === 'granted' ? '🔔 Notifikasi aktif' : s === 'denied' ? '🔕 Diblokir (ubah di pengaturan browser)' : '🔔 Aktifkan notifikasi';
+  b.textContent = s === 'granted' ? '✅️ Notifikasi aktif' : s === 'denied' ? '🔕 Diblokir (ubah di pengaturan browser)' : '🔔 Aktifkan notifikasi';
   b.disabled = s === 'granted' || s === 'denied' || s === 'unsupported';
 }
 async function notify(title, body, uid) {
@@ -411,7 +411,7 @@ function openMsgMenu(m, mine) {
   if (!m.deleted) addBtn('↩ Balas', () => setReply(m));
   if (canCopy) addBtn('📋 Salin teks', () => { navigator.clipboard?.writeText(String(m.text || '')).then(() => toast('Teks disalin.')).catch(() => {}); });
   if (canRecall) addBtn('🗑 Tarik pesan', () => recallMessage(m.id));
-  else if (mine && !m.deleted) addBtn('🗑 Tarik pesan (lewat batas 1 jam)', () => toast('Pesan hanya bisa ditarik dalam 1 jam setelah terkirim.'));
+  else if (mine && !m.deleted) addBtn('Pesan Tidak dapat di tarik', () => toast('Pesan hanya bisa ditarik dalam 1 jam setelah terkirim.'));
   addBtn('✖ Batal', () => {});
   sheet.classList.remove('hidden');
 }
@@ -641,12 +641,12 @@ function buildUI() {
   const menu = $('accountMenu'), first = $('menuTheme');
   const mk = (id, html, fn) => { const b = el('button'); b.type = 'button'; b.id = id; b.innerHTML = html; b.onclick = () => { closeMenu(); fn(); }; menu.insertBefore(b, first); };
   mk('menuProfile', '👤 <span>Profil</span>', openProfile);
-  mk('menuSettings', '⚙ <span>Pengaturan</span>', openSettings);
-  mk('menuInstall', '⬇ <span>Pasang aplikasi</span>', doInstall);
+  mk('menuSettings', '⚙ <span>General</span>', openSettings);
+  mk('menuInstall', '⬇ <span>Install aplikasi</span>', doInstall);
 
   /* modal pengaturan: owner/repo/branch/folder sudah tetap (lihat GH_FIXED),
      pengguna hanya perlu membuat & mengisi token pribadi mereka sendiri. */
-  mkModal('settingsModal', 'Pengaturan', `
+  mkModal('settingsModal', 'General', `
     <p class="st-note">Kirim gambar lewat repositori: <b id="ghRepoInfo">—</b>. Buat token pribadi Anda sendiri lewat tombol di bawah, lalu tempel di sini. Tanpa token, chat teks tetap berjalan normal. Token hanya disimpan di perangkat ini, tidak dikirim ke server mana pun selain GitHub.</p>
     <label class="field-label" for="ghToken">Token GitHub</label><input id="ghToken" type="password" autocomplete="off" maxlength="200" placeholder="github_pat_...">
     <div id="ghNotice" class="notice hidden"></div>
@@ -704,7 +704,7 @@ function buildUI() {
   const file = el('input'); file.type = 'file'; file.accept = 'image/*'; file.className = 'hidden';
   file.onchange = e => { const f = e.target.files[0]; e.target.value = ''; sendImage(f); };
   document.body.append(file);
-  const att = el('button', 'action-icon'); att.type = 'button'; att.id = 'attachButton'; att.textContent = '📎'; att.setAttribute('aria-label', 'Kirim gambar');
+  const att = el('button', 'action-icon'); att.type = 'button'; att.id = 'attachButton'; att.textContent = '⛶'; att.setAttribute('aria-label', 'Kirim gambar');
   att.onclick = () => file.click();
   $('emojiButton')?.after(att);
   const ep = el('div', 'emoji-panel hidden'); ep.id = 'emojiPanel';
