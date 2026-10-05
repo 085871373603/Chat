@@ -1001,7 +1001,7 @@ h1, h2 {
   width: 20px;
   height: 20px;
   object-fit: contain;
-  filter: brightness(5) invert(10);
+  filter: brightness(1) invert(0);
 }
 
 /* =========================================================
