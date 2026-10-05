@@ -120,30 +120,29 @@
 .boot-spinner {
   width: 50px;
   height: 50px;
+  border: 5px solid rgba(0, 166, 81, 0.20);
+  border-top: 5px solid #00a651;
+  border-radius: 50%;
 
-  background: #00a651;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  margin: auto;
 
-  clip-path: var(--alias-circle);
+  z-index: 9999;
 
-  /* Bentuk pixel */
-  image-rendering: pixelated;
-
-  animation: boot-spin 1.5s steps(8, end) infinite;
-
-  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.15));
+  animation: boot-spin 1.5s ease-in-out infinite;
 }
 
-/* Efek berputar dengan gerakan kaku/pixel */
+/* Berputar → berhenti sebentar → ulang */
 @keyframes boot-spin {
   0% {
     transform: rotate(0deg);
   }
 
-  62.5% {
-    transform: rotate(360deg);
-  }
-
-  75% {
+  70% {
     transform: rotate(360deg);
   }
 
