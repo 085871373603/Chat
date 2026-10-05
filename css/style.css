@@ -120,44 +120,26 @@
 .boot-spinner {
   width: 50px;
   height: 50px;
-  border: 5px solid var(--border);
-  border-top: 5px solid var(--accent);
-  border-radius: 50%;
-  animation: boot-spin 1s linear infinite;
+
+  background: #00a651;
+
+  clip-path: var(--alias-circle);
+
+  /* Bentuk pixel */
+  image-rendering: pixelated;
+
+  animation: boot-spin 1.5s steps(8, end) infinite;
+
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.15));
 }
 
-/* Animasi spinner */
-.boot-spinner {
-  width: 48px;
-  height: 48px;
-  position: relative;
-
-  animation: boot-spin 1.2s steps(8, end) infinite;
-}
-
-.boot-spinner::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-
-  background:
-    linear-gradient(#00a651, #00a651) 50% 0 / 8px 8px no-repeat,
-    linear-gradient(#00a651, #00a651) 75% 13% / 8px 8px no-repeat,
-    linear-gradient(#00a651, #00a651) 92% 42% / 8px 8px no-repeat,
-    linear-gradient(#00a651, #00a651) 75% 75% / 8px 8px no-repeat,
-    linear-gradient(#00a651, #00a651) 50% 92% / 8px 8px no-repeat,
-    linear-gradient(#00a651, #00a651) 13% 75% / 8px 8px no-repeat,
-    linear-gradient(#00a651, #00a651) 0% 42% / 8px 8px no-repeat,
-    linear-gradient(#00a651, #00a651) 13% 13% / 8px 8px no-repeat;
-}
-
-/* Putar kaku + berhenti */
+/* Efek berputar dengan gerakan kaku/pixel */
 @keyframes boot-spin {
   0% {
     transform: rotate(0deg);
   }
 
-  62% {
+  62.5% {
     transform: rotate(360deg);
   }
 
