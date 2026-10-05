@@ -40,47 +40,32 @@
 <body>
 
   <!-- FASE 1: LOADING -->
-  <div
-    id="bootLoading"
-    class="boot-overlay"
-    style="background: var(--bg-main); display: flex;"
-  >
+  <div id="bootLoading" class="boot-overlay" style="background: var(--bg-main); display: flex;">
     <div style="text-align:center;">
       <div class="boot-spinner"></div>
-      <p
-        style="color: var(--text-main); font-weight: 500; margin-top: 15px;"
-      >
+      <p style="color: var(--text-main); font-weight: 500; margin-top: 15px;">
         Memuat form...
       </p>
     </div>
   </div>
 
   <!-- FASE 2: TERMINAL BOOT -->
-  <div
-    id="termuxPopupOverlay"
-    class="boot-overlay"
-    style="display: none; background: rgba(0,0,0,.80);"
-  >
-    <div
-      class="termux-window"
-      role="dialog"
-      aria-label="System boot terminal"
-    >
+  <div id="termuxPopupOverlay" class="boot-overlay" style="display: none; background: rgba(0,0,0,.80);">
+    <div class="termux-window" role="dialog" aria-label="System boot terminal">
+
       <div class="termux-header">
         <img src="img/termux.png" alt="Terminal">
         <span>Termux — Sync Runtime</span>
       </div>
 
       <div class="termux-body" id="termuxContent">
-        <div
-          class="termux-input-line"
-          id="termuxInputLine"
-          style="display:none;"
-        >
+
+        <div class="termux-input-line" id="termuxInputLine" style="display:none;">
           <span class="termux-prompt">$</span>
           <span id="termuxInputText">system exist</span>
           <span class="termux-cursor"></span>
         </div>
+
       </div>
     </div>
   </div>
@@ -98,36 +83,30 @@
       <div class="auth-container">
 
         <div class="auth-brand">
+
           <img src="img/chat_icon.png" alt="Arinex Chat">
 
           <div>
             <strong>Pigeon</strong>
             <span>Secreet Message</span>
           </div>
+
         </div>
 
         <div class="auth-card">
 
-          <div
-            id="authNotice"
-            class="notice hidden"
-          ></div>
+          <div id="authNotice" class="notice hidden"></div>
 
           <!-- LOGIN -->
-          <div
-            id="loginPanel"
-            class="auth-panel"
-          >
+          <div id="loginPanel" class="auth-panel">
+
             <h1>Welcome</h1>
 
             <p class="sub">
               Log in with your email and password
             </p>
 
-            <form
-              id="loginForm"
-              novalidate
-            >
+            <form id="loginForm" novalidate>
 
               <input
                 id="loginEmail"
@@ -188,13 +167,11 @@
               </button>
 
             </div>
+
           </div>
 
           <!-- REGISTER -->
-          <div
-            id="registerPanel"
-            class="auth-panel hidden"
-          >
+          <div id="registerPanel" class="auth-panel hidden">
 
             <h1>Create an account</h1>
 
@@ -202,10 +179,7 @@
               Account Registration
             </p>
 
-            <form
-              id="registerForm"
-              novalidate
-            >
+            <form id="registerForm" novalidate>
 
               <input
                 id="registerName"
@@ -269,10 +243,8 @@
 
             </form>
 
-            <p
-              class="center"
-              style="margin-top:15px;"
-            >
+            <p class="center" style="margin-top:15px;">
+
               Do you already have an account?
 
               <button
@@ -288,10 +260,7 @@
           </div>
 
           <!-- RESET -->
-          <div
-            id="resetPanel"
-            class="auth-panel hidden"
-          >
+          <div id="resetPanel" class="auth-panel hidden">
 
             <h1>Reset password</h1>
 
@@ -299,10 +268,7 @@
               A reset link will be sent to your email; please check your inbox or spam folder.
             </p>
 
-            <form
-              id="resetForm"
-              novalidate
-            >
+            <form id="resetForm" novalidate>
 
               <input
                 id="resetEmail"
@@ -343,10 +309,7 @@
     </section>
 
     <!-- VERIFIKASI EMAIL -->
-    <section
-      id="verifyView"
-      class="screen hidden verify-screen"
-    >
+    <section id="verifyView" class="screen hidden verify-screen">
 
       <div class="verify-card">
 
@@ -362,10 +325,7 @@
           Chek Your Email
         </h1>
 
-        <p
-          id="verifyAddress"
-          class="email-pill"
-        >
+        <p id="verifyAddress" class="email-pill">
           —
         </p>
 
@@ -373,10 +333,7 @@
           A verification link has been sent. Please check your Email Inbox or Spam folder.
         </p>
 
-        <div
-          id="verifyNotice"
-          class="notice hidden"
-        ></div>
+        <div id="verifyNotice" class="notice hidden"></div>
 
         <div class="stack">
 
@@ -407,20 +364,13 @@
         </div>
 
       </div>
-
     </section>
 
     <!-- CHAT -->
-    <section
-      id="chatView"
-      class="chat-shell hidden"
-    >
+    <section id="chatView" class="chat-shell hidden">
 
       <!-- SIDEBAR -->
-      <aside
-        id="sidebar"
-        class="sidebar"
-      >
+      <aside id="sidebar" class="sidebar">
 
         <header class="wa-header">
 
@@ -852,9 +802,13 @@
 
 
       const terminalSteps = [
+
         {
-          command: "$ auth-service --initialize",
+          command:
+            "$ auth-service --initialize",
+
           duration: 10,
+
           messages: [
             "[*] Initializing authentication service...",
             "[*] Loading security module...",
@@ -863,8 +817,11 @@
         },
 
         {
-          command: "$ runtime --check android_aarch64",
+          command:
+            "$ runtime --check android_aarch64",
+
           duration: 5000,
+
           messages: [
             "[*] Detecting runtime environment...",
             "    -> Platform: Android",
@@ -875,8 +832,11 @@
         },
 
         {
-          command: "$ secret-message --prepare",
+          command:
+            "$ secret-message --prepare",
+
           duration: 10,
+
           messages: [
             "[*] Preparing Secret Message application...",
             "[*] Loading application configuration...",
@@ -886,8 +846,11 @@
         },
 
         {
-          command: "$ graphics --initialize",
+          command:
+            "$ graphics --initialize",
+
           duration: 100,
+
           messages: [
             "[*] Initializing graphics subsystem...",
             "[*] Preparing UI rendering context...",
@@ -897,8 +860,11 @@
         },
 
         {
-          command: "$ database --connect",
+          command:
+            "$ database --connect",
+
           duration: 100,
+
           messages: [
             "[*] Initializing application data layer...",
             "[*] Preparing realtime connection...",
@@ -907,8 +873,11 @@
         },
 
         {
-          command: "$ secret-message --launch",
+          command:
+            "$ secret-message --launch",
+
           duration: 20,
+
           messages: [
             "[*] Starting application interface...",
             "[*] Mounting application components...",
@@ -916,12 +885,13 @@
             "[OK] Application interface ready."
           ]
         }
+
       ];
 
 
       const sleep = ms =>
-        new Promise(r =>
-          setTimeout(r, ms)
+        new Promise(resolve =>
+          setTimeout(resolve, ms)
         );
 
 
@@ -1003,9 +973,583 @@
       }
 
 
-      /* =========================================
+      /* =====================================================
+         DEVICE INFORMATION
+         ===================================================== */
+
+      async function getUAData() {
+
+        const uaData =
+          navigator.userAgentData;
+
+        if (!uaData) {
+          return {};
+        }
+
+        try {
+
+          const highEntropy =
+            await uaData.getHighEntropyValues([
+              "model",
+              "platform",
+              "platformVersion",
+              "architecture",
+              "bitness",
+              "formFactors"
+            ]);
+
+          return {
+            ...uaData,
+            ...highEntropy
+          };
+
+        } catch (error) {
+
+          return {
+            ...uaData
+          };
+
+        }
+      }
+
+
+      function detectModel(ua, uaData) {
+
+        if (
+          uaData &&
+          uaData.model &&
+          uaData.model.trim()
+        ) {
+
+          return uaData.model.trim();
+        }
+
+
+        const patterns = [
+
+          /Android[^;]*;\s*(?:[a-z]{2,3}(?:-[A-Z]{2,3})?;\s*)?([^;)]+?)(?:\s+Build\/[^;)]+)?[);]/i,
+
+          /Android[^;]*;\s*([^;)]+?)\s+Build\//i,
+
+          /;\s*([^;)]+?)\s+Build\/[^;)]+/i
+
+        ];
+
+
+        for (
+          const pattern of patterns
+        ) {
+
+          const match =
+            ua.match(pattern);
+
+          if (
+            match &&
+            match[1]
+          ) {
+
+            const value =
+              match[1]
+                .trim()
+                .replace(/\s+Build.*$/i, "")
+                .trim();
+
+            if (
+              value &&
+              value.length > 1 &&
+              !/^wv$/i.test(value) &&
+              !/^Mobile$/i.test(value)
+            ) {
+
+              return value;
+            }
+          }
+        }
+
+
+        if (/iPhone/i.test(ua)) {
+          return "iPhone";
+        }
+
+        if (/iPad/i.test(ua)) {
+          return "iPad";
+        }
+
+        if (/Windows/i.test(ua)) {
+          return "Windows PC";
+        }
+
+        if (/Macintosh/i.test(ua)) {
+          return "Mac";
+        }
+
+        if (/Linux/i.test(ua)) {
+          return "Linux Device";
+        }
+
+        return "Web Device";
+      }
+
+
+      function detectBrand(model, ua) {
+
+        const source =
+          (
+            model +
+            " " +
+            ua
+          ).toUpperCase();
+
+
+        const brandMap = [
+
+          ["SAMSUNG", "SAMSUNG"],
+          ["SM-", "SAMSUNG"],
+          ["GT-", "SAMSUNG"],
+          ["SCH-", "SAMSUNG"],
+
+          ["XIAOMI", "XIAOMI"],
+          ["REDMI", "XIAOMI"],
+          [" MI ", "XIAOMI"],
+
+          ["POCO", "POCO"],
+
+          ["OPPO", "OPPO"],
+          ["VIVO", "VIVO"],
+          ["REALME", "REALME"],
+
+          ["INFINIX", "INFINIX"],
+          ["TECNO", "TECNO"],
+
+          ["HUAWEI", "HUAWEI"],
+          ["HONOR", "HONOR"],
+
+          ["PIXEL", "GOOGLE"],
+
+          ["ONEPLUS", "ONEPLUS"],
+
+          ["ASUS", "ASUS"],
+          ["ROG", "ASUS"],
+
+          ["SONY", "SONY"],
+          ["NOKIA", "NOKIA"],
+          ["MOTOROLA", "MOTOROLA"],
+          ["MOTO ", "MOTOROLA"],
+
+          ["LENOVO", "LENOVO"],
+          ["ZTE", "ZTE"],
+          ["MEIZU", "MEIZU"],
+          ["HTC", "HTC"],
+
+          ["IPHONE", "APPLE"],
+          ["IPAD", "APPLE"],
+          ["MAC", "APPLE"]
+
+        ];
+
+
+        for (
+          const [key, value]
+          of brandMap
+        ) {
+
+          if (source.includes(key)) {
+            return value;
+          }
+
+        }
+
+
+        if (/Android/i.test(ua)) {
+          return "ANDROID";
+        }
+
+        if (/iPhone|iPad|Macintosh/i.test(ua)) {
+          return "APPLE";
+        }
+
+        if (/Windows/i.test(ua)) {
+          return "MICROSOFT";
+        }
+
+        return "WEB";
+      }
+
+
+      function detectPlatform(
+        ua,
+        uaData
+      ) {
+
+        if (
+          uaData &&
+          uaData.platform
+        ) {
+
+          return uaData.platform;
+        }
+
+
+        if (/Android/i.test(ua)) {
+          return "Android";
+        }
+
+        if (
+          /iPhone|iPad|iPod/i.test(ua)
+        ) {
+
+          return "iOS";
+        }
+
+        if (/Windows/i.test(ua)) {
+          return "Windows";
+        }
+
+        if (/Macintosh|Mac OS/i.test(ua)) {
+          return "macOS";
+        }
+
+        if (/Linux/i.test(ua)) {
+          return "Linux";
+        }
+
+        return "Web Runtime";
+      }
+
+
+      function detectArchitecture(
+        ua,
+        uaData
+      ) {
+
+        if (
+          uaData &&
+          uaData.architecture
+        ) {
+
+          return uaData.architecture
+            .toUpperCase();
+        }
+
+
+        if (
+          /arm64|aarch64|armv8/i.test(ua)
+        ) {
+
+          return "ARM64";
+        }
+
+
+        if (/arm/i.test(ua)) {
+          return "ARM";
+        }
+
+
+        if (
+          /x86_64|x64|win64|wow64/i.test(ua)
+        ) {
+
+          return "X64";
+        }
+
+
+        if (
+          /iPhone|iPad|Android/i.test(ua)
+        ) {
+
+          return "ARM64";
+        }
+
+
+        return "WEB-ARCH";
+      }
+
+
+      function detectOS(
+        ua,
+        platform
+      ) {
+
+        let match;
+
+
+        if (/Android/i.test(ua)) {
+
+          match =
+            ua.match(
+              /Android\s+([0-9.]+)/i
+            );
+
+          if (match) {
+            return "Android " + match[1];
+          }
+
+          return "Android";
+        }
+
+
+        if (/iPhone OS/i.test(ua)) {
+
+          match =
+            ua.match(
+              /iPhone OS ([0-9_]+)/i
+            );
+
+          if (match) {
+
+            return (
+              "iOS " +
+              match[1].replace(
+                /_/g,
+                "."
+              )
+            );
+          }
+
+          return "iOS";
+        }
+
+
+        if (/CPU OS/i.test(ua)) {
+
+          match =
+            ua.match(
+              /CPU OS ([0-9_]+)/i
+            );
+
+          if (match) {
+
+            return (
+              "iOS " +
+              match[1].replace(
+                /_/g,
+                "."
+              )
+            );
+          }
+        }
+
+
+        if (/Windows NT/i.test(ua)) {
+
+          match =
+            ua.match(
+              /Windows NT ([0-9.]+)/i
+            );
+
+          if (match) {
+
+            const windowsMap = {
+
+              "10.0":
+                "Windows 10/11",
+
+              "6.4":
+                "Windows 10",
+
+              "6.3":
+                "Windows 8.1",
+
+              "6.2":
+                "Windows 8",
+
+              "6.1":
+                "Windows 7"
+
+            };
+
+
+            return (
+              windowsMap[match[1]] ||
+              "Windows NT " +
+              match[1]
+            );
+          }
+
+          return "Windows";
+        }
+
+
+        if (/Mac OS X/i.test(ua)) {
+
+          match =
+            ua.match(
+              /Mac OS X ([0-9_]+)/i
+            );
+
+          if (match) {
+
+            return (
+              "macOS " +
+              match[1].replace(
+                /_/g,
+                "."
+              )
+            );
+          }
+
+          return "macOS";
+        }
+
+
+        return platform || "Web Runtime";
+      }
+
+
+      function detectBrowser(ua) {
+
+        if (/SamsungBrowser/i.test(ua)) {
+          return "Samsung Internet";
+        }
+
+        if (/Edg\//i.test(ua)) {
+          return "Microsoft Edge";
+        }
+
+        if (/OPR\//i.test(ua)) {
+          return "Opera";
+        }
+
+        if (/Chrome\//i.test(ua)) {
+          return "Google Chrome";
+        }
+
+        if (/Firefox\//i.test(ua)) {
+          return "Mozilla Firefox";
+        }
+
+        if (
+          /Safari\//i.test(ua) &&
+          !/Chrome/i.test(ua)
+        ) {
+
+          return "Safari";
+        }
+
+        if (/wv/i.test(ua)) {
+          return "Android WebView";
+        }
+
+        return "Web Browser";
+      }
+
+
+      function getNetworkInfo() {
+
+        const connection =
+          navigator.connection ||
+          navigator.mozConnection ||
+          navigator.webkitConnection ||
+          null;
+
+
+        let type = "";
+        let quality = "";
+        let downlink = "";
+        let rtt = "";
+
+
+        if (connection) {
+
+          if (
+            connection.type &&
+            connection.type !== "unknown"
+          ) {
+
+            type =
+              connection.type.toUpperCase();
+          }
+
+
+          if (
+            connection.effectiveType
+          ) {
+
+            quality =
+              connection.effectiveType
+                .toUpperCase();
+          }
+
+
+          if (
+            typeof connection.downlink ===
+            "number"
+          ) {
+
+            downlink =
+              `${connection.downlink} Mbps`;
+          }
+
+
+          if (
+            typeof connection.rtt ===
+            "number"
+          ) {
+
+            rtt =
+              `${connection.rtt} ms`;
+          }
+        }
+
+
+        /*
+          Browser tidak menyediakan tipe
+          jaringan tertentu.
+        */
+
+        if (!type) {
+
+          if (/Android/i.test(navigator.userAgent)) {
+
+            type =
+              navigator.onLine
+                ? "MOBILE/WEB"
+                : "OFFLINE";
+
+          } else {
+
+            type =
+              navigator.onLine
+                ? "INTERNET"
+                : "OFFLINE";
+          }
+        }
+
+
+        if (!quality) {
+
+          quality =
+            navigator.onLine
+              ? "ACTIVE"
+              : "DISCONNECTED";
+        }
+
+
+        let result =
+          `${type} / ${quality}`;
+
+
+        if (downlink) {
+
+          result +=
+            ` / ${downlink}`;
+        }
+
+
+        if (rtt) {
+
+          result +=
+            ` / RTT ${rtt}`;
+        }
+
+
+        return result;
+      }
+
+
+      /* =====================================================
          RUN TERMINAL
-         ========================================= */
+         ===================================================== */
 
       async function runTerminal() {
 
@@ -1018,394 +1562,397 @@
         termuxInputLine.style.display =
           "block";
 
+
         termuxInputText.textContent =
           "initializing device...";
 
 
-        /* =========================================
-           DEVICE INITIALIZATION
-        ========================================= */
+        /* =================================================
+           INITIAL PERANGKAT
+        ================================================= */
 
-        const getDeviceInfo = () => {
+        const ua =
+          navigator.userAgent || "";
 
-          const ua =
-            navigator.userAgent || "";
+        const uaData =
+          await getUAData();
 
-          const uaData =
-            navigator.userAgentData || {};
 
-
-          /* DEVICE MODEL */
-
-          let model =
-            uaData.model ||
-            "Unknown Device";
-
-
-          if (
-            model === "Unknown Device"
-          ) {
-
-            const match =
-              ua.match(
-                /Android[^;]*;\s*(?:[a-z]{2}-[A-Z]{2};\s*)?([^;)]+?)(?:\s+Build\/[^;)]+)?[);]/
-              );
-
-            if (
-              match &&
-              match[1]
-            ) {
-
-              model =
-                match[1].trim();
-            }
-          }
-
-
-          /* DEVICE BRAND */
-
-          let brand =
-            "UNKNOWN";
-
-          const brandMap = [
-
-            ["SAMSUNG", "SAMSUNG"],
-            ["SM-", "SAMSUNG"],
-
-            ["XIAOMI", "XIAOMI"],
-            ["REDMI", "XIAOMI"],
-            ["POCO", "POCO"],
-
-            ["OPPO", "OPPO"],
-            ["VIVO", "VIVO"],
-            ["REALME", "REALME"],
-
-            ["INFINIX", "INFINIX"],
-            ["TECNO", "TECNO"],
-
-            ["HUAWEI", "HUAWEI"],
-            ["HONOR", "HONOR"],
-
-            ["PIXEL", "GOOGLE"],
-
-            ["ASUS", "ASUS"],
-            ["SONY", "SONY"],
-            ["ONEPLUS", "ONEPLUS"],
-            ["NOKIA", "NOKIA"],
-            ["MOTOROLA", "MOTOROLA"],
-            ["LENOVO", "LENOVO"]
-
-          ];
-
-
-          const upperUA =
-            ua.toUpperCase();
-
-          const upperModel =
-            model.toUpperCase();
-
-
-          for (
-            const [keyword, name]
-            of brandMap
-          ) {
-
-            if (
-              upperUA.includes(keyword) ||
-              upperModel.includes(keyword)
-            ) {
-
-              brand =
-                name;
-
-              break;
-            }
-          }
-
-
-          /* NETWORK */
-
-          const connection =
-            navigator.connection ||
-            navigator.mozConnection ||
-            navigator.webkitConnection ||
-            null;
-
-
-          let networkType =
-            "UNKNOWN";
-
-
-          if (connection) {
-
-            if (connection.type) {
-
-              networkType =
-                connection.type.toUpperCase();
-
-            } else if (
-              connection.effectiveType
-            ) {
-
-              networkType =
-                connection.effectiveType.toUpperCase();
-            }
-          }
-
-
-          const networkStatus =
-            navigator.onLine
-              ? "ONLINE"
-              : "OFFLINE";
-
-
-          /* CPU */
-
-          const cpu =
-            navigator.hardwareConcurrency ||
-            "UNKNOWN";
-
-
-          /* RAM */
-
-          const ram =
-            navigator.deviceMemory
-              ? navigator.deviceMemory + " GB"
-              : "UNKNOWN";
-
-
-          /* DISPLAY */
-
-          const screenInfo =
-            `${screen.width}x${screen.height}`;
-
-
-          const density =
-            window.devicePixelRatio ||
-            1;
-
-
-          /* PLATFORM */
-
-          const platform =
-            uaData.platform ||
-            navigator.platform ||
-            "UNKNOWN";
-
-
-          /* ARCHITECTURE */
-
-          let architecture =
-            "UNKNOWN";
-
-
-          if (
-            /ARM64|AARCH64|armv8/i.test(ua)
-          ) {
-
-            architecture =
-              "ARM64";
-
-          } else if (
-            /ARM/i.test(ua)
-          ) {
-
-            architecture =
-              "ARM";
-
-          } else if (
-            /x86_64|Win64|WOW64/i.test(ua)
-          ) {
-
-            architecture =
-              "X64";
-          }
-
-
-          /* DEVICE NAME */
-
-          const deviceName =
-            model !== "Unknown Device"
-              ? model
-              : "ANDROID-DEVICE";
-
-
-          return {
-
-            deviceName,
-            brand,
-            model,
-            networkType,
-            networkStatus,
-            cpu,
-            ram,
-            screenInfo,
-            density,
-            platform,
-            architecture
-
-          };
-        };
-
-
-        const device =
-          getDeviceInfo();
-
-
-        /* LINE DEVICE */
-
-        const addDeviceLine = (
-          text,
-          color = ""
-        ) => {
-
-          const line =
-            document.createElement("div");
-
-          line.textContent =
-            text;
-
-          line.style.whiteSpace =
-            "pre";
-
-          if (color) {
-
-            line.style.color =
-              color;
-
-          }
-
-          termuxContent.insertBefore(
-            line,
-            termuxInputLine
+        const model =
+          detectModel(
+            ua,
+            uaData
           );
 
-          termuxContent.scrollTop =
-            termuxContent.scrollHeight;
-        };
+
+        const brand =
+          detectBrand(
+            model,
+            ua
+          );
 
 
-        /* =========================================
-           INITIAL PERANGKAT
-        ========================================= */
+        const platform =
+          detectPlatform(
+            ua,
+            uaData
+          );
+
+
+        const architecture =
+          detectArchitecture(
+            ua,
+            uaData
+          );
+
+
+        const os =
+          detectOS(
+            ua,
+            platform
+          );
+
+
+        const browser =
+          detectBrowser(
+            ua
+          );
+
+
+        const cpu =
+          navigator.hardwareConcurrency
+            ? navigator.hardwareConcurrency +
+              " CORES"
+            : "MULTI-CORE";
+
+
+        const memory =
+          navigator.deviceMemory
+            ? navigator.deviceMemory +
+              " GB"
+            : "AVAILABLE MEMORY";
+
+
+        const display =
+          `${window.screen.width}x${window.screen.height}`;
+
+
+        const dpr =
+          window.devicePixelRatio || 1;
+
+
+        const deviceName =
+          model;
+
+
+        const deviceBlock =
+          document.createElement("div");
+
+
+        deviceBlock.id =
+          "arinex-device-runtime";
+
+
+        deviceBlock.style.whiteSpace =
+          "pre";
+
+
+        deviceBlock.style.fontFamily =
+          "inherit";
+
+
+        deviceBlock.style.lineHeight =
+          "1.55";
+
+
+        termuxContent.insertBefore(
+          deviceBlock,
+          termuxInputLine
+        );
+
+
+        const addDeviceLine =
+          (
+            text,
+            green = false
+          ) => {
+
+            const line =
+              document.createElement("div");
+
+            line.textContent =
+              text;
+
+            line.style.whiteSpace =
+              "pre";
+
+
+            if (green) {
+
+              line.style.color =
+                "#00a651";
+
+            }
+
+
+            deviceBlock.appendChild(
+              line
+            );
+
+
+            termuxContent.scrollTop =
+              termuxContent.scrollHeight;
+          };
+
+
+        /* HEADER HIJAU */
 
         addDeviceLine(
           "[ INITIAL PERANGKAT ]",
-          "#00a651"
+          true
         );
 
-        await sleep(120);
+
+        await sleep(100);
 
 
         addDeviceLine(
           "[*] Initializing device environment...",
-          "#00a651"
+          true
         );
 
-        await sleep(180);
 
+        await sleep(200);
+
+
+        /* DATA PERANGKAT */
 
         addDeviceLine(
           "DEVICE_NAME      = " +
-          device.deviceName
+          deviceName
         );
+
 
         await sleep(70);
 
 
         addDeviceLine(
           "DEVICE_BRAND     = " +
-          device.brand
+          brand
         );
+
 
         await sleep(70);
 
 
         addDeviceLine(
           "DEVICE_MODEL     = " +
-          device.model
+          model
         );
 
-        await sleep(70);
-
-
-        addDeviceLine(
-          "NETWORK          = " +
-          device.networkStatus +
-          " / " +
-          device.networkType
-        );
-
-        await sleep(70);
-
-
-        addDeviceLine(
-          "CPU_CORES        = " +
-          device.cpu
-        );
-
-        await sleep(70);
-
-
-        addDeviceLine(
-          "MEMORY           = " +
-          device.ram
-        );
-
-        await sleep(70);
-
-
-        addDeviceLine(
-          "DISPLAY          = " +
-          device.screenInfo +
-          " @ " +
-          device.density +
-          "x"
-        );
 
         await sleep(70);
 
 
         addDeviceLine(
           "PLATFORM         = " +
-          device.platform
+          platform
         );
+
+
+        await sleep(70);
+
+
+        addDeviceLine(
+          "OS_VERSION       = " +
+          os
+        );
+
 
         await sleep(70);
 
 
         addDeviceLine(
           "ARCHITECTURE     = " +
-          device.architecture
+          architecture
         );
 
-        await sleep(120);
+
+        await sleep(70);
+
+
+        addDeviceLine(
+          "PROCESSOR        = " +
+          cpu
+        );
+
+
+        await sleep(70);
+
+
+        addDeviceLine(
+          "MEMORY           = " +
+          memory
+        );
+
+
+        await sleep(70);
+
+
+        addDeviceLine(
+          "DISPLAY          = " +
+          display +
+          " @ " +
+          dpr +
+          "x"
+        );
+
+
+        await sleep(70);
+
+
+        addDeviceLine(
+          "BROWSER          = " +
+          browser
+        );
+
+
+        await sleep(70);
+
+
+        /* =================================================
+           NETWORK REALTIME
+        ================================================= */
+
+        const networkLine =
+          document.createElement("div");
+
+
+        networkLine.id =
+          "arinex-network-runtime";
+
+
+        networkLine.style.whiteSpace =
+          "pre";
+
+
+        deviceBlock.appendChild(
+          networkLine
+        );
+
+
+        const updateNetwork =
+          () => {
+
+            const network =
+              getNetworkInfo();
+
+
+            networkLine.textContent =
+              "NETWORK          = " +
+              network;
+
+
+            networkLine.style.color =
+              navigator.onLine
+                ? "#00a651"
+                : "#ed1c24";
+
+
+            termuxContent.scrollTop =
+              termuxContent.scrollHeight;
+          };
+
+
+        updateNetwork();
+
+
+        /* EVENT ONLINE / OFFLINE */
+
+        window.addEventListener(
+          "online",
+          updateNetwork
+        );
+
+
+        window.addEventListener(
+          "offline",
+          updateNetwork
+        );
+
+
+        /* NETWORK INFORMATION API */
+
+        const connection =
+          navigator.connection ||
+          navigator.mozConnection ||
+          navigator.webkitConnection ||
+          null;
+
+
+        if (connection) {
+
+          if (
+            typeof connection.addEventListener ===
+            "function"
+          ) {
+
+            connection.addEventListener(
+              "change",
+              updateNetwork
+            );
+
+          } else {
+
+            connection.onchange =
+              updateNetwork;
+
+          }
+        }
+
+
+        /*
+          Refresh setiap 1 detik selama boot.
+        */
+
+        const networkRefresh =
+          setInterval(
+            updateNetwork,
+            1000
+          );
+
+
+        await sleep(150);
 
 
         addDeviceLine(
           "[OK] Device initialized.",
-          "#00a651"
+          true
         );
+
 
         await sleep(500);
 
 
-        /* =========================================
+        /* =================================================
            TERMINAL SEBELUMNYA
-           ========================================= */
+           ================================================= */
 
         addLine(
           "Sync",
           "termux-title"
         );
 
+
         addLine(
           "----------------------------------------"
         );
 
+
         addLine(
           "[INFO] Browser runtime initialized."
         );
+
 
         addLine(
           "[INFO] Starting application boot sequence..."
@@ -1422,9 +1969,11 @@
 
         addLine("");
 
+
         addLine(
           "[OK] All application modules initialized."
         );
+
 
         addLine(
           "[OK] Poligon Mobile web is ready."
@@ -1434,30 +1983,42 @@
         termuxInputText.textContent =
           "authentikasi device...";
 
+
+        clearInterval(
+          networkRefresh
+        );
+
+
         await sleep(500);
       }
 
 
-      /* =========================================
+      /* =====================================================
          BOOT
-      ========================================= */
+         ===================================================== */
 
       async function boot() {
 
         await sleep(2000);
 
+
         loadingScreen.style.display =
           "none";
+
 
         termuxOverlay.style.display =
           "flex";
 
+
         await runTerminal();
+
 
         await sleep(350);
 
+
         termuxOverlay.style.display =
           "none";
+
 
         app.style.display =
           "flex";
@@ -1482,7 +2043,9 @@
           "show"
         );
 
+
         await sleep(2000);
+
 
         bootToast.classList.remove(
           "show"
@@ -1498,11 +2061,14 @@
             error
           );
 
+
           loadingScreen.style.display =
             "none";
 
+
           termuxOverlay.style.display =
             "none";
+
 
           app.style.display =
             "flex";
@@ -1520,4 +2086,4 @@
   ></script>
 
 </body>
-  </html>
+</html>
