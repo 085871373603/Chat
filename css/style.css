@@ -695,10 +695,10 @@ h1, h2 {
   background: none;
   border: none;
   color: var(--text-header);
-  font-size: 22px;
+  font-size: 40px;
   cursor: pointer;
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   clip-path: var(--alias-circle);
   display: flex;
   align-items: center;
@@ -711,8 +711,8 @@ h1, h2 {
 }
 
 .bubble-btn img {
-  width: 22px;
-  height: 22px;
+  width: 40px;
+  height: 40px;
   clip-path: var(--alias-circle);
   object-fit: cover;
 }
