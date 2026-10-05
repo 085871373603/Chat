@@ -44,12 +44,12 @@
     <div class="termux-window" role="dialog" aria-label="System boot terminal">
       <div class="termux-header">
         <img src="img/termux.png" alt="Terminal">
-        <span>Termux — Runtime</span>
+        <span>Termux — Sync Runtime</span>
       </div>
       <div class="termux-body" id="termuxContent">
         <div class="termux-input-line" id="termuxInputLine" style="display:none;">
           <span class="termux-prompt">$</span>
-          <span id="termuxInputText">system ready</span>
+          <span id="termuxInputText">system exist</span>
           <span class="termux-cursor"></span>
         </div>
       </div>
@@ -250,11 +250,11 @@
 
         <button id="menuInfo" type="button" onclick="window.location.href='info.html'">
           <img src="img/apl.png" style="width:16px;height:16px;object-fit:contain;margin-right:2px;" alt="">
-          <span>Tentang Aplikasi</span>
+          <span>play</span>
         </button>
 
         <button id="menuInfo" type="button" onclick="window.location.href='lisensi.html'">
-          <img src="img/license.png" style="width:16px;height:16px;object-fit:contain;margin-right:2px;" alt="">
+          <img src="img/lisensi.png" style="width:16px;height:16px;object-fit:contain;margin-right:2px;" alt="">
           <span>License</span>
         </button>
 
@@ -302,7 +302,7 @@
       const terminalSteps = [
         { command: "$ auth-service --initialize", duration: 10, messages: [
           "[*] Initializing authentication service...", "[*] Loading security module...", "[OK] Authentication service ready."] },
-        { command: "$ runtime --check android_aarch64", duration: 20, messages: [
+        { command: "$ runtime --check android_aarch64", duration: 5000, messages: [
           "[*] Detecting runtime environment...", "    -> Platform: Android", "    -> Architecture: ARM64",
           "    -> Browser runtime: WebView", "[OK] Runtime environment detected."] },
         { command: "$ secret-message --prepare", duration: 10, messages: [
@@ -313,7 +313,7 @@
           "[*] Loading visual assets...", "[OK] Graphics subsystem ready."] },
         { command: "$ database --connect", duration: 100, messages: [
           "[*] Initializing application data layer...", "[*] Preparing realtime connection...", "[OK] Data layer initialized."] },
-        { command: "$ secret-message --launch", duration: 2000, messages: [
+        { command: "$ secret-message --launch", duration: 20, messages: [
           "[*] Starting application interface...", "[*] Mounting application components...",
           "[*] Registering event handlers...", "[OK] Application interface ready."] }
       ];
@@ -347,7 +347,7 @@
         termuxContent.appendChild(termuxInputLine);
         termuxInputLine.style.display = "block";
         termuxInputText.textContent = "initializing...";
-        addLine("TRANSFER DATA", "termux-title");
+        addLine("Sync", "termux-title");
         addLine("----------------------------------------");
         addLine("[INFO] Browser runtime initialized.");
         addLine("[INFO] Starting application boot sequence...");
