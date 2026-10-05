@@ -704,7 +704,27 @@ function buildUI() {
   const file = el('input'); file.type = 'file'; file.accept = 'image/*'; file.className = 'hidden';
   file.onchange = e => { const f = e.target.files[0]; e.target.value = ''; sendImage(f); };
   document.body.append(file);
-  const att = el('button', 'action-icon'); att.type = 'button'; att.id = 'attachButton'; att.textContent = '⛶'; att.setAttribute('aria-label', 'Kirim gambar');
+  const att = el('button', 'action-icon'); att.type = 'button'; att.id = 'attachButton'; att.type = 'button';
+att.id = 'attachButton';
+att.innerHTML = `
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    width="22"
+    height="22"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3" y="3" width="18" height="18" rx="3"/>
+    <circle cx="8.5" cy="8.5" r="1.5"/>
+    <path d="M3 16l5-5 4 4 2.5-2.5L21 16.5"/>
+  </svg>
+`;
+att.setAttribute('aria-label', 'Kirim gambar');');
   att.onclick = () => file.click();
   $('emojiButton')?.after(att);
   const ep = el('div', 'emoji-panel hidden'); ep.id = 'emojiPanel';
