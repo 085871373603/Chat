@@ -759,3 +759,569 @@ document.addEventListener('visibilitychange', () => {
   if (vis && S.activeUid && S.unread[S.activeUid]) { S.unread[S.activeUid] = 0; renderContacts(); updateBadge(); }
 });
 addEventListener('pagehide', () => setPresence(false));
+
+
+
+/* =========================================================
+   ARINEX ADD-ON
+   HAPUS CHAT + LINK AKTIF
+   Tambahkan di PALING BAWAH tanpa mengubah kode utama.
+   ========================================================= */
+(() => {
+  'use strict';
+
+  const STORE_KEY = 'arinex_deleted_chats_v1';
+  const STYLE_ID = 'arinex-chat-tools-style';
+
+  /* =========================================================
+     STYLE TAMBAHAN
+     ========================================================= */
+  if (!$(STYLE_ID)) {
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
+
+    style.textContent = `
+      /* ---------- Tombol hapus chat ---------- */
+      .arinex-chat-delete-btn {
+        width: 38px;
+        height: 38px;
+        border: none;
+        padding: 0;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        cursor: pointer;
+        background: transparent;
+        color: inherit;
+
+        clip-path: var(--alias-8, none);
+
+        transition:
+          transform 0.12s ease,
+          background 0.15s ease;
+      }
+
+      /* Icon sampah */
+      .arinex-chat-delete-btn img {
+        width: 22px;
+        height: 22px;
+        object-fit: contain;
+        display: block;
+
+        pointer-events: none;
+        user-select: none;
+        -webkit-user-drag: none;
+
+        transition: transform 0.12s ease;
+      }
+
+      .arinex-chat-delete-btn:hover {
+        background: rgba(237, 28, 36, 0.10);
+        transform: scale(1.05);
+      }
+
+      .arinex-chat-delete-btn:active {
+        transform: scale(0.86);
+      }
+
+      .arinex-chat-delete-btn:active img {
+        transform: scale(0.9);
+      }
+
+      /* ---------- Link di pesan ---------- */
+      .arinex-msg-link {
+        color: var(--accent, #00a651);
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 2px;
+        word-break: break-word;
+        cursor: pointer;
+      }
+
+      .arinex-msg-link:hover {
+        text-decoration-thickness: 2px;
+      }
+
+      .arinex-msg-link:active {
+        opacity: 0.7;
+      }
+    `;
+
+    document.head.append(style);
+  }
+
+  /* =========================================================
+     STORAGE
+     Struktur:
+     {
+       "UID_LAWAN": {
+         hidden: true,
+         clearedAt: 1234567890
+       }
+     }
+     ========================================================= */
+
+  function loadDeletedChats() {
+    try {
+      const raw = ls.get(`${STORE_KEY}_${S.user?.uid || 'guest'}`);
+      const data = raw ? JSON.parse(raw) : {};
+      return data && typeof data === 'object' ? data : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function saveDeletedChats(data) {
+    try {
+      ls.set(
+        `${STORE_KEY}_${S.user?.uid || 'guest'}`,
+        JSON.stringify(data)
+      );
+    } catch {}
+  }
+
+  function getChatDeleteInfo(uid) {
+    const data = loadDeletedChats();
+    return data[uid] || null;
+  }
+
+  function isChatHidden(uid) {
+    return !!getChatDeleteInfo(uid)?.hidden;
+  }
+
+  function getChatClearedAt(uid) {
+    return Number(getChatDeleteInfo(uid)?.clearedAt || 0);
+  }
+
+  function markChatDeleted(uid) {
+    if (!uid) return;
+
+    const data = loadDeletedChats();
+
+    data[uid] = {
+      hidden: true,
+      clearedAt: Date.now()
+    };
+
+    saveDeletedChats(data);
+  }
+
+  /*
+   * Dipakai saat pengguna menambahkan kontak kembali.
+   * clearedAt tetap dipertahankan supaya pesan lama
+   * sebelum waktu hapus tidak langsung muncul lagi.
+   */
+  function restoreChat(uid) {
+    if (!uid) return;
+
+    const data = loadDeletedChats();
+
+    if (!data[uid]) return;
+
+    data[uid].hidden = false;
+
+    saveDeletedChats(data);
+  }
+
+  /* =========================================================
+     FILTER CHAT YANG SUDAH DIHAPUS DARI DAFTAR
+     ========================================================= */
+
+  const originalRenderContacts = renderContacts;
+
+  renderContacts = function () {
+    if (!S.user) {
+      return originalRenderContacts();
+    }
+
+    const originalContacts = S.contacts;
+    const deleted = loadDeletedChats();
+
+    const filteredContacts = Object.fromEntries(
+      Object.entries(originalContacts).filter(([uid]) => {
+        return !deleted[uid]?.hidden;
+      })
+    );
+
+    S.contacts = filteredContacts;
+
+    try {
+      return originalRenderContacts();
+    } finally {
+      S.contacts = originalContacts;
+    }
+  };
+
+  /* =========================================================
+     JANGAN AKTIFKAN WATCHER UNTUK CHAT YANG DIHAPUS
+     Supaya tidak tetap dianggap sebagai percakapan aktif.
+     ========================================================= */
+
+  const originalWatchChats = watchChats;
+
+  watchChats = function () {
+    if (!S.user) {
+      return originalWatchChats();
+    }
+
+    const originalContacts = S.contacts;
+    const deleted = loadDeletedChats();
+
+    const filteredContacts = Object.fromEntries(
+      Object.entries(originalContacts).filter(([uid]) => {
+        return !deleted[uid]?.hidden;
+      })
+    );
+
+    S.contacts = filteredContacts;
+
+    try {
+      return originalWatchChats();
+    } finally {
+      S.contacts = originalContacts;
+    }
+  };
+
+  /* =========================================================
+     SAAT KONTAK DITAMBAHKAN KEMBALI:
+     CHAT DIKEMBALIKAN KE DAFTAR.
+     ========================================================= */
+
+  const originalAddContactByEmail = addContactByEmail;
+
+  addContactByEmail = async function (value) {
+    const result = await originalAddContactByEmail(value);
+
+    if (result?.uid) {
+      restoreChat(result.uid);
+    }
+
+    return result;
+  };
+
+  /* =========================================================
+     TOMBOL HAPUS CHAT DI HEADER
+     ========================================================= */
+
+  function installDeleteButton() {
+    const menuBtn = $('chatMenuButton');
+
+    if (!menuBtn) return;
+    if ($('arinexChatDeleteButton')) return;
+
+    const btn = document.createElement('button');
+
+    btn.type = 'button';
+    btn.id = 'arinexChatDeleteButton';
+    btn.className = 'action-icon arinex-chat-delete-btn';
+
+    /* ---------- Icon menggunakan gambar ---------- */
+    const img = document.createElement('img');
+    img.src = 'img/sampah.png';
+    img.alt = '';
+    img.draggable = false;
+
+    btn.append(img);
+
+    btn.setAttribute('aria-label', 'Hapus chat');
+    btn.title = 'Hapus chat';
+
+    btn.addEventListener('click', deleteActiveChat);
+
+    menuBtn.insertAdjacentElement('afterend', btn);
+  }
+
+  /* =========================================================
+     HAPUS CHAT AKTIF
+     ========================================================= */
+
+  function deleteActiveChat() {
+    const uid = S.activeUid;
+
+    if (!uid) {
+      toast('Buka percakapan terlebih dahulu.');
+      return;
+    }
+
+    const peer =
+      S.peers[uid]?.displayName ||
+      S.contacts[uid]?.displayName ||
+      'Pengguna';
+
+    const ok = window.confirm(
+      `Hapus chat dengan ${peer}?\n\n` +
+      `Riwayat pesan sebelum sekarang akan disembunyikan ` +
+      `dari perangkat ini.`
+    );
+
+    if (!ok) return;
+
+    /* Simpan waktu penghapusan */
+    markChatDeleted(uid);
+
+    /* Hentikan listener pesan */
+    S.watch[uid]?.();
+
+    if (S.watch[uid]) {
+      delete S.watch[uid];
+    }
+
+    S.unread[uid] = 0;
+
+    /*
+     * clearActive() sudah:
+     * - mematikan listener aktif
+     * - mengosongkan chat
+     * - kembali ke daftar kontak
+     */
+    clearActive();
+
+    updateBadge();
+    toast('Obrolan dihapus dari perangkat ini.');
+  }
+
+  /* =========================================================
+     LINKIFY PESAN
+     ========================================================= */
+
+  function linkifyMessage(element) {
+    if (!element) return;
+    if (element.dataset.linkified === '1') return;
+
+    const text = element.textContent || '';
+
+    /*
+     * URL yang didukung:
+     * https://example.com
+     * http://example.com
+     * www.example.com
+     */
+    const urlRegex = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi;
+
+    if (!urlRegex.test(text)) {
+      element.dataset.linkified = '1';
+      return;
+    }
+
+    /* reset regex state */
+    urlRegex.lastIndex = 0;
+
+    const fragment = document.createDocumentFragment();
+
+    let lastIndex = 0;
+    let match;
+
+    while ((match = urlRegex.exec(text)) !== null) {
+      const raw = match[0];
+      const start = match.index;
+      const end = start + raw.length;
+
+      /*
+       * Jangan ikutkan tanda baca yang biasanya
+       * berada setelah URL.
+       */
+      let urlText = raw;
+      let trailing = '';
+
+      const trimMatch = urlText.match(/([.,!?;:]+)$/);
+
+      if (trimMatch) {
+        trailing = trimMatch[1];
+
+        urlText = urlText.slice(
+          0,
+          urlText.length - trailing.length
+        );
+      }
+
+      /* Teks sebelum URL */
+      if (start > lastIndex) {
+        fragment.append(
+          document.createTextNode(
+            text.slice(lastIndex, start)
+          )
+        );
+      }
+
+      let href = urlText;
+
+      if (/^www\./i.test(href)) {
+        href = 'https://' + href;
+      }
+
+      try {
+        const parsed = new URL(href);
+
+        /*
+         * Hanya izinkan HTTP/HTTPS.
+         */
+        if (
+          parsed.protocol !== 'http:' &&
+          parsed.protocol !== 'https:'
+        ) {
+          throw new Error('Protocol tidak diizinkan.');
+        }
+
+        const a = document.createElement('a');
+
+        a.className = 'arinex-msg-link';
+        a.href = parsed.href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = urlText;
+        a.title = parsed.href;
+
+        fragment.append(a);
+
+        if (trailing) {
+          fragment.append(
+            document.createTextNode(trailing)
+          );
+        }
+
+      } catch {
+        /*
+         * Kalau URL tidak valid, tampilkan
+         * sebagai teks biasa.
+         */
+        fragment.append(
+          document.createTextNode(raw)
+        );
+      }
+
+      lastIndex = end;
+    }
+
+    if (lastIndex < text.length) {
+      fragment.append(
+        document.createTextNode(
+          text.slice(lastIndex)
+        )
+      );
+    }
+
+    element.textContent = '';
+    element.append(fragment);
+    element.dataset.linkified = '1';
+  }
+
+  /* =========================================================
+     SEMBUNYIKAN PESAN SEBELUM WAKTU "HAPUS CHAT"
+     ========================================================= */
+
+  function cleanOldMessages() {
+    const list = $('messageList');
+
+    if (!list || !S.activeUid) return;
+
+    const clearedAt = getChatClearedAt(S.activeUid);
+
+    if (!clearedAt) return;
+
+    list.querySelectorAll('.message-row[data-id]').forEach(row => {
+      const id = row.dataset.id;
+      const message = msgCache[id];
+
+      if (!message) return;
+
+      const ts = Number(message.createdAt) || 0;
+
+      if (ts > 0 && ts <= clearedAt) {
+        row.remove();
+      }
+    });
+
+    /*
+     * Bersihkan separator tanggal yang sudah tidak
+     * memiliki pesan.
+     */
+    const separators = Array.from(
+      list.querySelectorAll('.day-sep')
+    );
+
+    separators.forEach(sep => {
+      let node = sep.nextElementSibling;
+      let hasMessage = false;
+
+      while (node) {
+        if (node.classList.contains('day-sep')) {
+          break;
+        }
+
+        if (node.classList.contains('message-row')) {
+          hasMessage = true;
+          break;
+        }
+
+        node = node.nextElementSibling;
+      }
+
+      if (!hasMessage) {
+        sep.remove();
+      }
+    });
+  }
+
+  /* =========================================================
+     ENHANCE MESSAGE
+     ========================================================= */
+
+  function enhanceMessages() {
+    const list = $('messageList');
+
+    if (!list) return;
+
+    cleanOldMessages();
+
+    list
+      .querySelectorAll(
+        '.message-text:not(.recalled-text)'
+      )
+      .forEach(linkifyMessage);
+  }
+
+  /* =========================================================
+     OBSERVER
+     Setiap kali Firebase merender ulang pesan,
+     link otomatis diaktifkan lagi.
+     ========================================================= */
+
+  const messageList = $('messageList');
+
+  if (messageList) {
+    let enhanceFrame = 0;
+
+    const observer = new MutationObserver(() => {
+      cancelAnimationFrame(enhanceFrame);
+
+      enhanceFrame = requestAnimationFrame(() => {
+        enhanceMessages();
+      });
+    });
+
+    observer.observe(messageList, {
+      childList: true,
+      subtree: true
+    });
+
+    enhanceMessages();
+  }
+
+  /* =========================================================
+     INITIALIZE
+     ========================================================= */
+
+  installDeleteButton();
+
+  /*
+   * buildUI() sudah dijalankan sebelum blok ini,
+   * jadi tombol header bisa langsung dibuat.
+   */
+  requestAnimationFrame(() => {
+    installDeleteButton();
+    enhanceMessages();
+  });
+
+})();
