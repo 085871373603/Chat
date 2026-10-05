@@ -489,7 +489,7 @@ input::placeholder {
   width: 45px;
   height: 45px;
   /* Clip-path dihapus dan radius dikosongkan agar gambar tidak bulat (kotak) */
-  border-radius: 10;
+  border-radius: 0;
 }
 
 .auth-brand div {
@@ -1001,7 +1001,7 @@ h1, h2 {
   width: 20px;
   height: 20px;
   object-fit: contain;
-  filter: brightness(0) invert(1);
+  filter: brightness(10) invert(1);
 }
 
 /* =========================================================
