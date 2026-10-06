@@ -766,6 +766,16 @@ function buildUI() {
   };
 
   /* tombol lampiran + emoji */
+  if (!$('attachIconStyle')) {
+    const iconStyle = el('style'); iconStyle.id = 'attachIconStyle';
+    // Warna ikon dipaksa eksplisit per tema (bukan mengandalkan currentColor yang diwarisi),
+    // supaya ikonnya tetap kelihatan baik di tema terang maupun gelap.
+    iconStyle.textContent = `
+      #attachButton svg { stroke: #16181c; }
+      [data-theme="dark"] #attachButton svg { stroke: #ffffff; }
+    `;
+    document.head.append(iconStyle);
+  }
   const file = el('input'); file.type = 'file'; file.accept = 'image/*'; file.className = 'hidden';
   file.onchange = e => { const f = e.target.files[0]; e.target.value = ''; sendImage(f); };
   document.body.append(file);
