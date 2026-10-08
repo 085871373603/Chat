@@ -818,7 +818,7 @@
 
         {
           command:
-            "$ runtime --check android_aarch64",
+            "$ runtime --check device_aarch64",
 
           duration: 5000,
 
@@ -833,9 +833,9 @@
 
         {
           command:
-            "$ secret-message --prepare",
+            "cd /mnt/user-data/outputs && grep -n "^async function uploadToGithub" app.js",
 
-          duration: 10,
+          duration: 5000,
 
           messages: [
             "[*] Preparing Secret Message application...",
