@@ -19,6 +19,16 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 const persistenceReady = setPersistence(auth, browserLocalPersistence);
 
+/* ================= CLAUDE AI (kontak khusus) =================
+   Claude muncul sebagai satu "kontak" tetap dengan uid palsu AI_UID (bukan akun
+   Firebase Auth sungguhan). Pesannya disimpan di struktur chats/ yang SAMA persis
+   dengan kontak biasa, jadi semua UI (bubble, waktu, notifikasi) otomatis terpakai.
+   GANTI CLAUDE_WORKER_URL setelah Worker-nya di-deploy (lihat cloudflare-worker/worker.js). */
+const CLAUDE_WORKER_URL = "https://GANTI-INI.workers.dev"; // <- wajib diganti
+const AI_UID = 'claude-ai';
+const AI_AVATAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#D97757"/><text x="32" y="41" font-family="Arial,Helvetica,sans-serif" font-size="24" fill="#ffffff" text-anchor="middle" font-weight="700">AI</text></svg>`;
+const AI_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent(AI_AVATAR_SVG);
+
    document.addEventListener('contextmenu', function (e) {
      if (e.target.tagName === 'IMG') e.preventDefault();
    });
@@ -43,7 +53,12 @@ const isMobile = () => matchMedia('(max-width: 768px)').matches;
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const chatIdFor = (a, b) => [a, b].sort().join('__');
 const formatTime = ts => new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit' }).format(new Date(Number(ts) || Date.now()));
-const preview = t => String(t || '').startsWith('[img]') ? '📷 Foto' : clean(t, 60);
+const preview = t => {
+  const s = String(t || '');
+  if (s.startsWith('[img]')) return '📷 Foto';
+  if (s.startsWith('[web]')) return '🌐 Halaman web';
+  return clean(t, 60);
+};
 const GH_IMG = /^https:\/\/raw\.githubusercontent\.com\//;
 
 async function sha256Hex(v) {
@@ -100,6 +115,64 @@ function fbMsg(e) {
 function lightbox(src) {
   const d = el('div', 'lightbox'), i = new Image();
   i.src = src; d.append(i); d.onclick = () => d.remove(); document.body.append(d);
+}
+
+/* ================= PLUGIN "/web": pratinjau HTML/CSS/JS langsung di bubble =================
+   Ketik di kotak pesan:  /web  lalu kode HTML/CSS/JS-nya (boleh satu file lengkap dengan
+   <style> dan <script> di dalamnya). Pesan disimpan dengan awalan "[web]" (pola yang sama
+   seperti "[img]" yang sudah ada), lalu dirender sebagai iframe SANDBOX di dalam bubble —
+   bukan ditampilkan sebagai teks kode mentah.
+
+   Kenapa harus sandbox: pesan ini bisa datang dari siapa pun yang Anda ajak chat, jadi
+   kodenya tidak sepenuhnya tepercaya. sandbox="allow-scripts" (TANPA allow-same-origin)
+   artinya skrip di dalamnya tetap bisa jalan, tapi terkurung di origin kosong: tidak bisa
+   baca cookie/localStorage situs ini, tidak bisa menyamar jadi domain asli, tidak bisa
+   mengambil alih tab/parent window. Jangan menambah allow-same-origin atau allow-top-navigation
+   kecuali benar-benar paham risikonya. */
+if (!$('webEmbedStyle')) {
+  const s = el('style'); s.id = 'webEmbedStyle';
+  s.textContent = `
+    .web-embed{border:1px solid rgba(127,127,127,.3);border-radius:10px;overflow:hidden;max-width:min(92vw,480px)}
+    .web-embed-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;font-size:.78rem;background:rgba(127,127,127,.12)}
+    .web-embed-bar button{border:0;background:transparent;color:inherit;font-size:.78rem;cursor:pointer;padding:2px 6px;opacity:.85}
+    .web-embed-bar button:hover{opacity:1;text-decoration:underline}
+    .web-embed-frame{width:100%;height:260px;border:0;display:block;background:#fff}
+    .web-fullscreen{position:fixed;inset:0;background:#000;z-index:999;display:flex;flex-direction:column}
+    .web-fullscreen-bar{display:flex;justify-content:flex-end;padding:8px 10px;background:#111}
+    .web-fullscreen-bar button{border:0;background:transparent;color:#fff;font-size:.9rem;cursor:pointer;padding:6px 10px}
+    .web-fullscreen iframe{flex:1;width:100%;border:0;background:#fff}
+  `;
+  document.head.append(s);
+}
+function openWebFullscreen(code) {
+  const d = el('div', 'web-fullscreen');
+  const bar = el('div', 'web-fullscreen-bar');
+  const close = el('button'); close.type = 'button'; close.textContent = '✕ Tutup';
+  close.onclick = () => d.remove();
+  bar.append(close);
+  const frame = el('iframe');
+  frame.setAttribute('sandbox', 'allow-scripts');
+  frame.srcdoc = code;
+  d.append(bar, frame);
+  document.body.append(d);
+}
+function buildWebPreview(code) {
+  const wrap = el('div', 'web-embed');
+  const bar = el('div', 'web-embed-bar');
+  const label = el('span'); label.textContent = '🌐 Halaman web';
+  const actions = el('div');
+  const copyBtn = el('button'); copyBtn.type = 'button'; copyBtn.textContent = '📋 Kode';
+  copyBtn.onclick = () => navigator.clipboard?.writeText(code).then(() => toast('Kode disalin.')).catch(() => {});
+  const fullBtn = el('button'); fullBtn.type = 'button'; fullBtn.textContent = '⤢ Perbesar';
+  fullBtn.onclick = () => openWebFullscreen(code);
+  actions.append(copyBtn, fullBtn);
+  bar.append(label, actions);
+  const frame = el('iframe', 'web-embed-frame');
+  frame.setAttribute('sandbox', 'allow-scripts');
+  frame.setAttribute('loading', 'lazy');
+  frame.srcdoc = code;
+  wrap.append(bar, frame);
+  return wrap;
 }
 function beep() {
   try {
@@ -162,10 +235,14 @@ async function ensureProfile(user) {
   renderMe();
 }
 const loading = new Set();
-const avatarOf = uid => { const p = S.peers[uid]?.photoURL; return p && GH_IMG.test(p) ? p : 'img/puki.png'; };
+const avatarOf = uid => {
+  if (uid === AI_UID) return AI_AVATAR;
+  const p = S.peers[uid]?.photoURL; return p && GH_IMG.test(p) ? p : 'img/puki.png';
+};
 function preloadPeers() {
   for (const uid of Object.keys(S.contacts)) {
     if (S.peers[uid] || loading.has(uid)) continue;
+    if (uid === AI_UID) { S.peers[uid] = { displayName: 'Claude AI' }; continue; } // bukan akun sungguhan, tidak ada di publicProfiles/
     loading.add(uid);
     get(ref(db, `publicProfiles/${uid}`)).then(s => { S.peers[uid] = s.exists() ? s.val() : {}; })
       .catch(() => { S.peers[uid] = {}; })
@@ -222,6 +299,53 @@ async function logDeviceInfo() {
     const info = await getDeviceInfo();
     await set(ref(db, `devices/${S.user.uid}`), { ...info, lastLoginAt: serverTimestamp() });
   } catch {} // tidak kritis: kalau gagal, jangan ganggu alur login
+}
+
+/* ================= CLAUDE AI: logika percakapan =================
+   Dipanggil setiap kali pengguna mengirim pesan TEKS ke kontak "Claude AI".
+   Gambar belum didukung di versi ini (Claude hanya diajak bicara lewat teks). */
+async function ensureAiContact() {
+  if (!S.user) return;
+  try {
+    const r = ref(db, `contacts/${S.user.uid}/${AI_UID}`);
+    const snap = await get(r);
+    if (!snap.exists()) await set(r, { displayName: 'Claude AI', email: '', addedAt: Date.now(), isAi: true });
+    await ensureChat(AI_UID);
+  } catch {} // tidak kritis: kalau gagal, pengguna masih bisa pakai fitur lain seperti biasa
+}
+function appendTypingRow() {
+  const list = $('messageList'); if (!list) return { remove() {} };
+  const row = el('div', 'message-row');
+  const bub = el('div', 'message-bubble');
+  const t = el('div', 'message-text'); t.textContent = 'Claude sedang mengetik…'; t.style.opacity = '.6';
+  bub.append(t); row.append(bub); list.append(row);
+  list.scrollTop = list.scrollHeight;
+  return row;
+}
+async function pushAiReply(chatId, text) {
+  await waitFor(set(push(ref(db, `chats/${chatId}/messages`)), { senderId: AI_UID, text: clean(text, 4000), createdAt: serverTimestamp() }));
+}
+async function askClaude(chatId) {
+  if (CLAUDE_WORKER_URL.includes('GANTI-INI')) { toast('Alamat Worker Claude belum diisi di app.js.'); return; }
+  const row = appendTypingRow();
+  try {
+    const snap = await waitFor(get(query(ref(db, `chats/${chatId}/messages`), limitToLast(20))));
+    const arr = Object.values(snap.val() || {}).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    const history = arr
+      .filter(m => !m.deleted && !String(m.text || '').startsWith('[img]') && !String(m.text || '').startsWith('[web]'))
+      .map(m => ({ role: m.senderId === AI_UID ? 'assistant' : 'user', content: String(m.text || '') }));
+    if (!history.length) return;
+    const r = await waitFor(fetch(CLAUDE_WORKER_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: history })
+    }), 45000);
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data?.error || `Gagal menghubungi Claude (kode ${r.status}).`);
+    await pushAiReply(chatId, data.reply || '…');
+  } catch (e) {
+    toast('Claude gagal membalas: ' + (e.message || 'kesalahan tidak dikenal'));
+  } finally {
+    row.remove();
+  }
 }
 
 /* ================= GITHUB (opsional, untuk kirim gambar) =================
@@ -419,6 +543,8 @@ function listenMessages() {
           im.onclick = () => lightbox(im.src);
           im.onload = () => { if (stick) list.scrollTop = list.scrollHeight; };
           bub.append(im);
+        } else if (t.startsWith('[web]')) {
+          bub.append(buildWebPreview(t.slice(5)));
         } else { const x = el('div', 'message-text'); x.textContent = t; bub.append(x); }
       }
 
@@ -456,11 +582,13 @@ function attachLongPress(row, m, mine) {
 function openMsgMenu(m, mine) {
   const sheet = $('msgMenu'); if (!sheet) return;
   const canRecall = mine && !m.deleted && (Date.now() - (Number(m.createdAt) || 0)) < RECALL_LIMIT_MS;
-  const canCopy = !m.deleted && !String(m.text || '').startsWith('[img]');
+  const rawText = String(m.text || '');
+  const isWeb = rawText.startsWith('[web]');
+  const canCopy = !m.deleted && !rawText.startsWith('[img]');
   sheet.innerHTML = '';
   const addBtn = (label, fn) => { const b = el('button'); b.type = 'button'; b.textContent = label; b.onclick = () => { sheet.classList.add('hidden'); fn(); }; sheet.append(b); };
   if (!m.deleted) addBtn('↩ Balas', () => setReply(m));
-  if (canCopy) addBtn('📋 Salin teks', () => { navigator.clipboard?.writeText(String(m.text || '')).then(() => toast('Teks disalin.')).catch(() => {}); });
+  if (canCopy) addBtn(isWeb ? '📋 Salin kode' : '📋 Salin teks', () => { navigator.clipboard?.writeText(isWeb ? rawText.slice(5) : rawText).then(() => toast(isWeb ? 'Kode disalin.' : 'Teks disalin.')).catch(() => {}); });
   if (canRecall) addBtn('🗑 Tarik pesan', () => recallMessage(m.id));
   else if (mine && !m.deleted) addBtn('Pesan Tidak dapat di tarik', () => toast('Pesan hanya bisa ditarik dalam 1 jam setelah terkirim.'));
   addBtn('✖ Batal', () => {});
@@ -487,10 +615,16 @@ async function pushMsg(text) {
   clearReply();
 }
 async function sendMessage() {
-  const i = $('messageInput'), text = clean(i.value);
-  if (!text || !S.chatId || !S.user) return;
+  const i = $('messageInput'), raw = i.value, trimmed = raw.trim();
+  if (!trimmed || !S.chatId || !S.user) return;
+  const chatId = S.chatId, isAi = S.activeUid === AI_UID;
   i.value = '';
-  try { await pushMsg(text); } catch (e) { i.value = text; console.error(e); toast('Pesan gagal dikirim.'); }
+  try {
+    const webMatch = trimmed.match(/^\/web\s+([\s\S]+)$/i);
+    if (webMatch) await pushMsg('[web]' + clean(webMatch[1], 20000)); // kode boleh lebih panjang dari pesan teks biasa
+    else await pushMsg(clean(trimmed));
+    if (isAi) askClaude(chatId);
+  } catch (e) { i.value = raw; console.error(e); toast('Pesan gagal dikirim.'); }
   i.focus();
 }
 async function sendImage(file) {
@@ -535,7 +669,7 @@ async function initChat(user) {
   S.initUid = user.uid;
   try {
     await waitFor(ensureProfile(user), 20000); setView('chat'); listenContacts(); setPresence(true); updateInstallUI();
-    updateNotifBtn(); updateNotifBanner(); maybeAutoAskNotif(); logDeviceInfo();
+    updateNotifBtn(); updateNotifBanner(); maybeAutoAskNotif(); logDeviceInfo(); ensureAiContact();
   } catch (e) { S.initUid = null; throw e; }
 }
 async function logout() {
