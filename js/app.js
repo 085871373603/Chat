@@ -57,25 +57,9 @@ const preview = t => {
   const s = String(t || '');
   if (s.startsWith('[img]')) return '📷 Foto';
   if (s.startsWith('[web]')) return '🌐 Halaman web';
-  if (s.startsWith('[audio]')) return '🎙 Pesan suara';
   return clean(t, 60);
 };
 const GH_IMG = /^https:\/\/raw\.githubusercontent\.com\//;
-
-/* ================= ICON LIBRARY ================= */
-function ensureBootstrapIcons() {
-  if (document.getElementById('bootstrapIconsCSS')) return;
-
-  const link = document.createElement('link');
-  link.id = 'bootstrapIconsCSS';
-  link.rel = 'stylesheet';
-  link.href = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css';
-  link.crossOrigin = 'anonymous';
-
-  document.head.appendChild(link);
-}
-
-ensureBootstrapIcons();
 
 async function sha256Hex(v) {
   const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
@@ -190,73 +174,6 @@ function buildWebPreview(code) {
   wrap.append(bar, frame);
   return wrap;
 }
-
-/* ================= PESAN SUARA =================
-   Rekam lewat MediaRecorder (mikrofon), unggah sebagai file audio ke GitHub
-   (jalur sama dengan gambar, lewat uploadRawToGithub), simpan pesan dengan
-   awalan "[audio]url" lalu dirender sebagai <audio controls> native — bukan
-   pemutar custom, supaya tombol play/pause/volume tetap bekerja persis sama
-   di semua browser tanpa perlu kode tambahan. */
-let mediaRecorder = null, recChunks = [], recStream = null, recTimer = null, recStart = 0, recChatId = null;
-function pickAudioMime() {
-  const cands = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
-  return cands.find(t => window.MediaRecorder?.isTypeSupported?.(t)) || '';
-}
-async function startRecording() {
-  if (!S.chatId) { toast('Buka percakapan dulu.'); return; }
-  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { toast('Perangkat/browser ini tidak mendukung rekam suara.'); return; }
-  if (mediaRecorder) return;
-  try { recStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-  catch { toast('Tidak bisa mengakses mikrofon. Periksa izin mikrofon untuk situs ini.'); return; }
-  const mime = pickAudioMime();
-  try { mediaRecorder = new MediaRecorder(recStream, mime ? { mimeType: mime } : undefined); }
-  catch { toast('Gagal memulai rekaman.'); recStream.getTracks().forEach(t => t.stop()); return; }
-  recChunks = []; recChatId = S.chatId;
-  mediaRecorder.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
-  mediaRecorder.start();
-  recStart = Date.now();
-  showRecBar();
-}
-function stopRecording(send) {
-  if (!mediaRecorder) return;
-  const mr = mediaRecorder, mime = mediaRecorder.mimeType || 'audio/webm', chatId = recChatId;
-  mediaRecorder = null;
-  mr.onstop = async () => {
-    recStream?.getTracks().forEach(t => t.stop()); recStream = null;
-    hideRecBar();
-    if (!send) { recChunks = []; return; }
-    const blob = new Blob(recChunks, { type: mime }); recChunks = [];
-    if (blob.size < 400) { toast('Rekaman terlalu pendek, coba lagi.'); return; }
-    toast('Mengunggah pesan suara…');
-    try {
-      if (!ghCfg()) { toast('Atur GitHub di Pengaturan untuk mengirim pesan suara.'); openSettings(); return; }
-      const ext = mime.includes('mp4') ? 'm4a' : 'webm';
-      const url = await uploadRawToGithub(blob, 'voice', ext);
-      await waitFor(set(push(ref(db, `chats/${chatId}/messages`)), { senderId: S.user.uid, text: '[audio]' + url, createdAt: serverTimestamp() }));
-      toast('Pesan suara terkirim.');
-      if (chatId === chatIdFor(S.user.uid, AI_UID)) askClaude(chatId);
-    } catch (e) { toast(e.message || 'Gagal mengirim pesan suara.'); }
-  };
-  try { mr.stop(); } catch {}
-}
-function showRecBar() {
-  hideRecBar();
-  const form = $('messageForm'); if (!form) return;
-  const bar = el('div', 'mic-rec-bar'); bar.id = 'micRecBar';
-  const dot = el('span', 'dot');
-  const time = el('span'); time.id = 'micRecTime'; time.textContent = '0:00';
-  const hint = el('span'); hint.textContent = 'Merekam…'; hint.style.flex = '1'; hint.style.opacity = '.8'; hint.style.fontSize = '.85rem';
-  const cancel = el('button'); cancel.type = 'button'; cancel.textContent = '✕ Batal'; cancel.onclick = () => stopRecording(false);
-  const send = el('button'); send.type = 'button'; send.textContent = '➤ Kirim'; send.onclick = () => stopRecording(true);
-  bar.append(dot, time, hint, cancel, send);
-  form.before(bar);
-  recTimer = setInterval(() => {
-    const sec = Math.floor((Date.now() - recStart) / 1000);
-    const t = $('micRecTime'); if (t) t.textContent = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
-  }, 500);
-}
-function hideRecBar() { clearInterval(recTimer); recTimer = null; $('micRecBar')?.remove(); }
-
 function beep() {
   try {
     const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain();
@@ -415,7 +332,7 @@ async function askClaude(chatId) {
     const snap = await waitFor(get(query(ref(db, `chats/${chatId}/messages`), limitToLast(20))));
     const arr = Object.values(snap.val() || {}).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
     const history = arr
-      .filter(m => !m.deleted && !String(m.text || '').startsWith('[img]') && !String(m.text || '').startsWith('[web]') && !String(m.text || '').startsWith('[audio]'))
+      .filter(m => !m.deleted && !String(m.text || '').startsWith('[img]') && !String(m.text || '').startsWith('[web]'))
       .map(m => ({ role: m.senderId === AI_UID ? 'assistant' : 'user', content: String(m.text || '') }));
     if (!history.length) return;
     const r = await waitFor(fetch(CLAUDE_WORKER_URL, {
@@ -429,1149 +346,6 @@ async function askClaude(chatId) {
   } finally {
     row.remove();
   }
-}
-
-/* ================= PANGGILAN SUARA/VIDEO (WebRTC) =================
-   Audio/video panggilan mengalir LANGSUNG antar dua perangkat (peer-to-peer) lewat WebRTC —
-   Firebase hanya dipakai sebagai "meja perkenalan" (signaling): tempat kedua pihak saling
-   bertukar SDP offer/answer dan ICE candidate supaya bisa saling menemukan, lalu setelah
-   tersambung Firebase tidak lagi dilewati audio/videonya.
-
-   PENTING — keterbatasan jujur: di bawah ini hanya memakai server STUN gratis dari Google
-   untuk membantu menembus NAT/firewall. TIDAK ada server TURN. Ini artinya panggilan akan
-   berhasil tersambung di kebanyakan jaringan rumahan/seluler biasa, TAPI BISA GAGAL di
-   jaringan yang sangat ketat (WiFi kantor/kampus, sebagian jaringan seluler dengan symmetric
-   NAT). Perbaikannya adalah menambah server TURN (perlu biaya/hosting terpisah, bisa
-   ditambahkan belakangan kalau masalah ini sering terjadi). */
-const ICE_SERVERS = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] };
-const callState = {
-  pc: null, chatId: null, peerUid: null, isCaller: false, video: false,
-  localStream: null, remoteStream: null, offCandidates: null, offAnswer: null, offStatus: null,
-  timer: null, startedAt: 0,
-};
-let offIncomingCalls = null, ringTimer = null;
-const callRef = chatId => ref(db, `calls/${chatId}`);
-
-function listenIncomingCalls() {
-  offIncomingCalls?.();
-  offIncomingCalls = onValue(ref(db, `callInvites/${S.user.uid}`), s => {
-    const inv = s.val();
-    if (!inv) { hideIncomingCallUI(); return; }
-    if (callState.pc) { declineCall(inv); return; } // sudah dalam panggilan lain -> otomatis sibuk
-    showIncomingCallUI(inv);
-  });
-}
-
-/* ================= MEDIA PERMISSION ================= */
-
-function mediaErrorMessage(err, video = false) {
-  const name = err?.name || '';
-
-  if (!window.isSecureContext) {
-    return 'Kamera dan mikrofon membutuhkan koneksi HTTPS.';
-  }
-
-  switch (name) {
-    case 'NotAllowedError':
-      return video
-        ? 'Izin kamera atau mikrofon ditolak. Izinkan Camera dan Microphone untuk situs ini.'
-        : 'Izin mikrofon ditolak. Izinkan Microphone untuk situs ini.';
-
-    case 'PermissionDeniedError':
-      return video
-        ? 'Izin kamera atau mikrofon ditolak oleh browser.'
-        : 'Izin mikrofon ditolak oleh browser.';
-
-    case 'NotFoundError':
-      return video
-        ? 'Kamera atau mikrofon tidak ditemukan di perangkat.'
-        : 'Mikrofon tidak ditemukan di perangkat.';
-
-    case 'NotReadableError':
-      return video
-        ? 'Kamera atau mikrofon sedang digunakan aplikasi lain.'
-        : 'Mikrofon sedang digunakan aplikasi lain.';
-
-    case 'OverconstrainedError':
-      return video
-        ? 'Kamera tidak mendukung konfigurasi yang diminta.'
-        : 'Mikrofon tidak mendukung konfigurasi yang diminta.';
-
-    case 'SecurityError':
-      return 'Akses kamera/mikrofon diblokir oleh keamanan browser atau kebijakan situs.';
-
-    case 'AbortError':
-      return 'Permintaan kamera/mikrofon dibatalkan.';
-
-    default:
-      return video
-        ? 'Tidak dapat mengakses kamera dan mikrofon.'
-        : 'Tidak dapat mengakses mikrofon.';
-  }
-}
-
-async function requestCallMedia(video = false) {
-  if (!window.isSecureContext) {
-    throw new Error(
-      'Panggilan suara/video hanya dapat digunakan melalui HTTPS.'
-    );
-  }
-
-  if (!navigator.mediaDevices?.getUserMedia) {
-    throw new Error(
-      'Browser ini tidak mendukung akses kamera/mikrofon.'
-    );
-  }
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: !!video
-    });
-
-    return stream;
-
-  } catch (err) {
-    console.error('Media permission error:', err);
-
-    const message = mediaErrorMessage(
-      err,
-      video
-    );
-
-    toast(message);
-
-    throw new Error(message);
-  }
-}
-
-async function startCall(peerUid, video) {
-  if (callState.pc) { toast('Sedang dalam panggilan lain.'); return; }
-  if (!peerUid || peerUid === S.user.uid) return;
-
-  let localStream;
-
-  try {
-    localStream = await requestCallMedia(video);
-  } catch {
-    return;
-  }
-
-  const chatId = chatIdFor(S.user.uid, peerUid);
-  const pc = new RTCPeerConnection(ICE_SERVERS);
-
-  Object.assign(callState, {
-    pc,
-    chatId,
-    peerUid,
-    isCaller: true,
-    video,
-    localStream,
-    remoteStream: new MediaStream()
-  });
-
-  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-
-  const cRef = callRef(chatId);
-  await set(cRef, null).catch(() => {});
-
-  pc.onicecandidate = e => {
-    if (e.candidate) {
-      push(
-        ref(db, `calls/${chatId}/callerCandidates`),
-        e.candidate.toJSON()
-      );
-    }
-  };
-
-  try {
-    const offer = await pc.createOffer();
-
-    await pc.setLocalDescription(offer);
-
-    await set(cRef, {
-      video,
-      callerUid: S.user.uid,
-      offer: {
-        sdp: offer.sdp,
-        type: offer.type
-      },
-      createdAt: Date.now()
-    });
-
-    await set(
-      ref(db, `callInvites/${peerUid}`),
-      {
-        chatId,
-        fromUid: S.user.uid,
-        fromName: renderMe(),
-        video,
-        createdAt: Date.now()
-      }
-    );
-
-    callState.offAnswer = onValue(
-      ref(db, `calls/${chatId}/answer`),
-      async s => {
-        const ans = s.val();
-
-        if (
-          ans &&
-          !pc.currentRemoteDescription
-        ) {
-          try {
-            await pc.setRemoteDescription(
-              new RTCSessionDescription(ans)
-            );
-          } catch {}
-        }
-      }
-    );
-
-    callState.offCandidates = onValue(
-      ref(db, `calls/${chatId}/calleeCandidates`),
-      s => {
-        Object.values(s.val() || {}).forEach(c =>
-          pc.addIceCandidate(
-            new RTCIceCandidate(c)
-          ).catch(() => {})
-        );
-      }
-    );
-
-    callState.offStatus = onValue(
-      cRef,
-      s => {
-        if (
-          !s.exists() &&
-          callState.pc === pc
-        ) {
-          endCallLocal(
-            'Panggilan berakhir.'
-          );
-        }
-      }
-    );
-
-    showInCallUI(
-      peerUid,
-      video,
-      true
-    );
-
-  } catch (err) {
-    console.error('Start call error:', err);
-
-    localStream
-      ?.getTracks()
-      .forEach(t => t.stop());
-
-    endCallLocal(null);
-
-    toast(
-      err?.message ||
-      'Gagal memulai panggilan.'
-    );
-  }
-}
-
-async function acceptCall(inv) {
-  hideIncomingCallUI();
-
-  if (callState.pc) return;
-
-  const { chatId, fromUid, video } = inv;
-
-  let localStream;
-
-  try {
-    localStream = await requestCallMedia(video);
-  } catch {
-    declineCall(inv);
-    return;
-  }
-
-  const cRef = callRef(chatId);
-  const snap = await get(cRef).catch(() => null);
-  const callData = snap?.val();
-
-  if (!callData?.offer) {
-    toast('Panggilan sudah berakhir.');
-
-    localStream
-      .getTracks()
-      .forEach(t => t.stop());
-
-    return;
-  }
-
-  const pc = new RTCPeerConnection(ICE_SERVERS);
-
-  Object.assign(callState, {
-    pc,
-    chatId,
-    peerUid: fromUid,
-    isCaller: false,
-    video,
-    localStream,
-    remoteStream: new MediaStream()
-  });
-
-  localStream
-    .getTracks()
-    .forEach(t => pc.addTrack(t, localStream));
-
-  pc.onicecandidate = e => {
-    if (e.candidate) {
-      push(
-        ref(db, `calls/${chatId}/calleeCandidates`),
-        e.candidate.toJSON()
-      );
-    }
-  };
-
-  try {
-    await pc.setRemoteDescription(
-      new RTCSessionDescription(
-        callData.offer
-      )
-    );
-
-    const answer =
-      await pc.createAnswer();
-
-    await pc.setLocalDescription(answer);
-
-    await update(
-      cRef,
-      {
-        answer: {
-          sdp: answer.sdp,
-          type: answer.type
-        }
-      }
-    );
-
-    await set(
-      ref(db, `callInvites/${S.user.uid}`),
-      null
-    ).catch(() => {});
-
-    callState.offCandidates = onValue(
-      ref(db, `calls/${chatId}/callerCandidates`),
-      s => {
-        Object.values(s.val() || {}).forEach(c =>
-          pc.addIceCandidate(
-            new RTCIceCandidate(c)
-          ).catch(() => {})
-        );
-      }
-    );
-
-    callState.offStatus = onValue(
-      cRef,
-      s => {
-        if (
-          !s.exists() &&
-          callState.pc === pc
-        ) {
-          endCallLocal(
-            'Panggilan berakhir.'
-          );
-        }
-      }
-    );
-
-    showInCallUI(
-      fromUid,
-      video,
-      false
-    );
-
-  } catch (err) {
-    console.error(
-      'Accept call error:',
-      err
-    );
-
-    localStream
-      ?.getTracks()
-      .forEach(t => t.stop());
-
-    endCallLocal(null);
-
-    toast(
-      err?.message ||
-      'Gagal menerima panggilan.'
-    );
-  }
-}
-
-function declineCall(inv) {
-  hideIncomingCallUI();
-  if (inv?.chatId) set(ref(db, `calls/${inv.chatId}`), null).catch(() => {});
-  if (S.user) set(ref(db, `callInvites/${S.user.uid}`), null).catch(() => {});
-}
-function hangUp() {
-  const { chatId, peerUid } = callState;
-  if (chatId) set(callRef(chatId), null).catch(() => {});
-  if (peerUid) set(ref(db, `callInvites/${peerUid}`), null).catch(() => {});
-  if (S.user) set(ref(db, `callInvites/${S.user.uid}`), null).catch(() => {});
-  endCallLocal(null);
-}
-function endCallLocal(message) {
-  const { pc, localStream, offCandidates, offAnswer, offStatus } = callState;
-  offCandidates?.(); offAnswer?.(); offStatus?.();
-  localStream?.getTracks().forEach(t => t.stop());
-  try { pc?.close(); } catch {}
-  clearInterval(callState.timer);
-  Object.assign(callState, {
-    pc: null, chatId: null, peerUid: null, isCaller: false, video: false,
-    localStream: null, remoteStream: null, offCandidates: null, offAnswer: null, offStatus: null,
-    timer: null, startedAt: 0,
-  });
-  hideInCallUI(message);
-}
-
-/* ---------- UI panggilan (disuntik lewat JS, sama seperti bagian UI lain di file ini) ---------- */
-function ensureCallStyles() {
-  ensureBootstrapIcons();
-
-  if ($('callStyle')) return;
-
-  const s = el('style');
-  s.id = 'callStyle';
-
-  s.textContent = `
-    .call-overlay{
-      position:fixed;
-      inset:0;
-      background:#0b0e14;
-      color:#fff;
-      z-index:1000;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:14px;
-      padding:24px;
-      text-align:center
-    }
-
-    .call-avatar{
-      width:96px;
-      height:96px;
-      border-radius:50%;
-      object-fit:cover;
-      background:#2a2f3a
-    }
-
-    .call-name{
-      font-size:1.2rem;
-      font-weight:700
-    }
-
-    .call-sub{
-      opacity:.75;
-      font-size:.9rem
-    }
-
-    .call-actions{
-      display:flex;
-      gap:18px;
-      margin-top:18px
-    }
-
-    .call-btn{
-      width:58px;
-      height:58px;
-      border-radius:50%;
-      border:0;
-      font-size:1.3rem;
-      cursor:pointer;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      transition:
-        transform .12s ease,
-        opacity .15s ease
-    }
-
-    .call-btn i{
-      font-size:1.35rem;
-      line-height:1
-    }
-
-    .call-btn:active{
-      transform:scale(.88)
-    }
-
-    .call-btn.accept{
-      background:#2fae4e;
-      color:#fff
-    }
-
-    .call-btn.decline,
-    .call-btn.hangup{
-      background:#e0392f;
-      color:#fff
-    }
-
-    .call-btn.mute,
-    .call-btn.cam{
-      background:#2a2f3a;
-      color:#fff
-    }
-
-    .call-btn.mute.off,
-    .call-btn.cam.off{
-      background:#666
-    }
-
-    .call-videos{
-      position:relative;
-      width:100%;
-      max-width:520px;
-      aspect-ratio:3/4;
-      background:#000;
-      border-radius:14px;
-      overflow:hidden
-    }
-
-    .call-videos video.remote{
-      width:100%;
-      height:100%;
-      object-fit:cover
-    }
-
-    .call-videos video.local{
-      position:absolute;
-      right:10px;
-      bottom:10px;
-      width:92px;
-      height:122px;
-      object-fit:cover;
-      border-radius:8px;
-      border:2px solid rgba(255,255,255,.25)
-    }
-
-    .mic-rec-bar{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:8px 12px;
-      background:rgba(224,57,47,.12);
-      border-radius:10px;
-      margin:0 8px 8px
-    }
-
-    .mic-rec-bar .dot{
-      width:10px;
-      height:10px;
-      border-radius:50%;
-      background:#e0392f;
-      animation:micblink 1s infinite
-    }
-
-    @keyframes micblink{
-      50%{
-        opacity:.25
-      }
-    }
-
-    .mic-rec-bar button{
-      border:0;
-      background:transparent;
-      cursor:pointer;
-      font-size:.85rem;
-      opacity:.85
-    }
-
-    .mic-rec-bar button:hover{
-      opacity:1
-    }
-
-    audio.msg-audio{
-      width:240px;
-      max-width:72vw
-    }
-
-    #callVoiceBtn i,
-    #callVideoBtn i,
-    #micButton i{
-      font-size:20px;
-      line-height:1
-    }
-
-    #incomingCallUI .call-btn i{
-      font-size:24px
-    }
-  `;
-
-  document.head.append(s);
-}
-
-function startRing() {
-  stopRing();
-  playNotifSound();
-  ringTimer = setInterval(
-    playNotifSound,
-    1800
-  );
-}
-
-function stopRing() {
-  clearInterval(ringTimer);
-  ringTimer = null;
-}
-
-function showIncomingCallUI(inv) {
-  ensureCallStyles();
-  hideIncomingCallUI();
-  startRing();
-
-  const d = el(
-    'div',
-    'call-overlay'
-  );
-
-  d.id = 'incomingCallUI';
-
-  const av = el(
-    'img',
-    'call-avatar'
-  );
-
-  av.src = avatarOf(inv.fromUid);
-  av.alt = '';
-
-  const name = el(
-    'div',
-    'call-name'
-  );
-
-  name.textContent =
-    inv.fromName ||
-    'Panggilan masuk';
-
-  const sub = el(
-    'div',
-    'call-sub'
-  );
-
-  sub.textContent =
-    inv.video
-      ? '📹 Panggilan video masuk…'
-      : '📞 Panggilan suara masuk…';
-
-  const actions = el(
-    'div',
-    'call-actions'
-  );
-
-  const dec = el(
-    'button',
-    'call-btn decline'
-  );
-
-  dec.type = 'button';
-  dec.title = 'Tolak panggilan';
-  dec.setAttribute(
-    'aria-label',
-    'Tolak panggilan'
-  );
-
-  const decIcon = el('i');
-  decIcon.className =
-    'bi bi-telephone-x-fill';
-
-  dec.append(decIcon);
-
-  dec.onclick = () => {
-    stopRing();
-    declineCall(inv);
-  };
-
-  const acc = el(
-    'button',
-    'call-btn accept'
-  );
-
-  acc.type = 'button';
-  acc.title = 'Jawab panggilan';
-  acc.setAttribute(
-    'aria-label',
-    'Jawab panggilan'
-  );
-
-  const accIcon = el('i');
-
-  accIcon.className =
-    inv.video
-      ? 'bi bi-camera-video-fill'
-      : 'bi bi-telephone-fill';
-
-  acc.append(accIcon);
-
-  acc.onclick = () => {
-    stopRing();
-    acceptCall(inv);
-  };
-
-  actions.append(
-    dec,
-    acc
-  );
-
-  d.append(
-    av,
-    name,
-    sub,
-    actions
-  );
-
-  document.body.append(d);
-}
-
-function hideIncomingCallUI() {
-  stopRing();
-  $('incomingCallUI')?.remove();
-}
-
-function startCallTimer(statusEl) {
-  callState.startedAt = Date.now();
-  clearInterval(callState.timer);
-  callState.timer = setInterval(() => {
-    const sec = Math.floor((Date.now() - callState.startedAt) / 1000);
-    statusEl.textContent = `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
-  }, 1000);
-}
-
-function showInCallUI(
-  peerUid,
-  video,
-  isCaller
-) {
-  ensureCallStyles();
-  hideInCallUI(null);
-
-  const d = el(
-    'div',
-    'call-overlay'
-  );
-
-  d.id = 'inCallUI';
-
-  let remoteVideoEl = null;
-  let localVideoEl = null;
-
-  if (video) {
-
-    const box = el(
-      'div',
-      'call-videos'
-    );
-
-    remoteVideoEl = el(
-      'video',
-      'remote'
-    );
-
-    remoteVideoEl.autoplay = true;
-    remoteVideoEl.playsInline = true;
-
-    localVideoEl = el(
-      'video',
-      'local'
-    );
-
-    localVideoEl.autoplay = true;
-    localVideoEl.playsInline = true;
-    localVideoEl.muted = true;
-
-    if (callState.localStream) {
-      localVideoEl.srcObject =
-        callState.localStream;
-    }
-
-    box.append(
-      remoteVideoEl,
-      localVideoEl
-    );
-
-    d.append(box);
-
-  } else {
-
-    const av = el(
-      'img',
-      'call-avatar'
-    );
-
-    av.src =
-      avatarOf(peerUid);
-
-    av.alt = '';
-
-    d.append(av);
-  }
-
-  const name = el(
-    'div',
-    'call-name'
-  );
-
-  name.textContent =
-    S.peers[peerUid]?.displayName ||
-    S.contacts[peerUid]?.displayName ||
-    'Pengguna';
-
-  const status = el(
-    'div',
-    'call-sub'
-  );
-
-  status.textContent =
-    isCaller
-      ? 'Memanggil…'
-      : 'Menghubungkan…';
-
-  const actions = el(
-    'div',
-    'call-actions'
-  );
-
-  let muted = false;
-
-  const muteBtn = el(
-    'button',
-    'call-btn mute'
-  );
-
-  muteBtn.type = 'button';
-  muteBtn.title = 'Matikan mikrofon';
-
-  muteBtn.setAttribute(
-    'aria-label',
-    'Matikan mikrofon'
-  );
-
-  const muteIcon = el('i');
-
-  muteIcon.className =
-    'bi bi-mic-fill';
-
-  muteBtn.append(
-    muteIcon
-  );
-
-  muteBtn.onclick = () => {
-
-    muted = !muted;
-
-    callState.localStream
-      ?.getAudioTracks()
-      .forEach(
-        t => t.enabled = !muted
-      );
-
-    muteBtn.classList.toggle(
-      'off',
-      muted
-    );
-
-    muteIcon.className =
-      muted
-        ? 'bi bi-mic-mute-fill'
-        : 'bi bi-mic-fill';
-
-    muteBtn.title =
-      muted
-        ? 'Aktifkan mikrofon'
-        : 'Matikan mikrofon';
-
-    muteBtn.setAttribute(
-      'aria-label',
-      muteBtn.title
-    );
-  };
-
-  actions.append(
-    muteBtn
-  );
-
-  if (video) {
-
-    let camOff = false;
-
-    const camBtn = el(
-      'button',
-      'call-btn cam'
-    );
-
-    camBtn.type = 'button';
-    camBtn.title = 'Matikan kamera';
-
-    camBtn.setAttribute(
-      'aria-label',
-      'Matikan kamera'
-    );
-
-    const camIcon = el('i');
-
-    camIcon.className =
-      'bi bi-camera-video-fill';
-
-    camBtn.append(
-      camIcon
-    );
-
-    camBtn.onclick = () => {
-
-      camOff = !camOff;
-
-      callState.localStream
-        ?.getVideoTracks()
-        .forEach(
-          t => t.enabled = !camOff
-        );
-
-      camBtn.classList.toggle(
-        'off',
-        camOff
-      );
-
-      camIcon.className =
-        camOff
-          ? 'bi bi-camera-video-off-fill'
-          : 'bi bi-camera-video-fill';
-
-      camBtn.title =
-        camOff
-          ? 'Aktifkan kamera'
-          : 'Matikan kamera';
-
-      camBtn.setAttribute(
-        'aria-label',
-        camBtn.title
-      );
-    };
-
-    actions.append(
-      camBtn
-    );
-  }
-
-  const hang = el(
-    'button',
-    'call-btn hangup'
-  );
-
-  hang.type = 'button';
-  hang.title = 'Akhiri panggilan';
-
-  hang.setAttribute(
-    'aria-label',
-    'Akhiri panggilan'
-  );
-
-  const hangIcon = el('i');
-
-  hangIcon.className =
-    'bi bi-telephone-x-fill';
-
-  hang.append(
-    hangIcon
-  );
-
-  hang.onclick = hangUp;
-
-  actions.append(
-    hang
-  );
-
-  d.append(
-    name,
-    status,
-    actions
-  );
-
-  document.body.append(d);
-
-  const pc = callState.pc;
-
-  pc.ontrack = e => {
-
-    e.streams[0]
-      ?.getTracks()
-      .forEach(t => {
-
-        if (
-          !callState.remoteStream
-            .getTracks()
-            .some(
-              x => x.id === t.id
-            )
-        ) {
-          callState.remoteStream.addTrack(
-            t
-          );
-        }
-
-      });
-
-    if (
-      video &&
-      remoteVideoEl
-    ) {
-      remoteVideoEl.srcObject =
-        callState.remoteStream;
-    }
-  };
-
-  pc.onconnectionstatechange = () => {
-
-    if (callState.pc !== pc)
-      return;
-
-    const st =
-      pc.connectionState;
-
-    if (st === 'connected') {
-
-      status.textContent =
-        '00:00';
-
-      startCallTimer(
-        status
-      );
-
-    } else if (st === 'failed') {
-
-      status.textContent =
-        'Gagal tersambung (kemungkinan dibatasi jaringan).';
-
-    } else if (st === 'disconnected') {
-
-      status.textContent =
-        'Koneksi terputus…';
-
-    } else if (st === 'connecting') {
-
-      status.textContent =
-        'Menghubungkan…';
-    }
-  };
-}
-
-function hideInCallUI(message) {
-  clearInterval(callState.timer);
-  $('inCallUI')?.remove();
-  if (message) toast(message);
-}
-
-function installCallButtons() {
-  ensureBootstrapIcons();
-
-  const menuBtn = $('chatMenuButton');
-
-  if (!menuBtn || $('callVoiceBtn')) return;
-
-  const voiceBtn = el(
-    'button',
-    'action-icon'
-  );
-
-  voiceBtn.type = 'button';
-  voiceBtn.id = 'callVoiceBtn';
-
-  voiceBtn.title =
-    'Panggilan suara';
-
-  voiceBtn.setAttribute(
-    'aria-label',
-    'Panggilan suara'
-  );
-
-  const voiceIcon = el('i');
-
-  voiceIcon.className =
-    'bi bi-telephone-fill';
-
-  voiceBtn.append(
-    voiceIcon
-  );
-
-  voiceBtn.onclick = () => {
-
-    if (
-      S.activeUid &&
-      S.activeUid !== AI_UID
-    ) {
-      startCall(
-        S.activeUid,
-        false
-      );
-
-    } else {
-      toast(
-        'Panggilan belum tersedia untuk kontak ini.'
-      );
-    }
-  };
-
-  const videoBtn = el(
-    'button',
-    'action-icon'
-  );
-
-  videoBtn.type = 'button';
-  videoBtn.id = 'callVideoBtn';
-
-  videoBtn.title =
-    'Panggilan video';
-
-  videoBtn.setAttribute(
-    'aria-label',
-    'Panggilan video'
-  );
-
-  const videoIcon = el('i');
-
-  videoIcon.className =
-    'bi bi-camera-video-fill';
-
-  videoBtn.append(
-    videoIcon
-  );
-
-  videoBtn.onclick = () => {
-
-    if (
-      S.activeUid &&
-      S.activeUid !== AI_UID
-    ) {
-      startCall(
-        S.activeUid,
-        true
-      );
-
-    } else {
-      toast(
-        'Panggilan belum tersedia untuk kontak ini.'
-      );
-    }
-  };
-
-  menuBtn.insertAdjacentElement(
-    'beforebegin',
-    voiceBtn
-  );
-
-  menuBtn.insertAdjacentElement(
-    'beforebegin',
-    videoBtn
-  );
 }
 
 /* ================= GITHUB (opsional, untuk kirim gambar) =================
@@ -1594,11 +368,10 @@ async function compress(file, max = 1280, q = .82) {
   return new Promise(r => c.toBlob(r, 'image/jpeg', q));
 }
 const toB64 = blob => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result.split(',')[1]); f.onerror = rej; f.readAsDataURL(blob); });
-/* Unggah file APA PUN (blob) ke GitHub, tanpa pemrosesan gambar — dipakai gambar (lewat
-   uploadToGithub di bawah, setelah dikompres) maupun pesan suara (langsung, blob audio). */
-async function uploadRawToGithub(blob, sub, ext) {
+async function uploadToGithub(file, sub, max = 1280) {
   const g = ghCfg(); if (!g) throw new Error('GitHub belum diatur.');
-  const path = `${g.folder || 'arinex-chat'}/${sub}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  let blob; try { blob = await compress(file, max); } catch { throw new Error('File bukan gambar yang didukung.'); }
+  const path = `${g.folder || 'arinex-chat'}/${sub}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
   const r = await waitFor(fetch(`https://api.github.com/repos/${g.owner}/${g.repo}/contents/${path}`, {
     method: 'PUT',
     headers: { Authorization: `Bearer ${g.token}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
@@ -1606,10 +379,6 @@ async function uploadRawToGithub(blob, sub, ext) {
   }), 45000);
   if (!r.ok) throw new Error(r.status === 401 ? 'Token GitHub tidak valid.' : r.status === 403 || r.status === 404 ? 'Repo tidak ditemukan / token tidak punya izin.' : `Upload gagal (${r.status}).`);
   return `https://raw.githubusercontent.com/${g.owner}/${g.repo}/${g.branch || 'main'}/${path}`;
-}
-async function uploadToGithub(file, sub, max = 1280) {
-  let blob; try { blob = await compress(file, max); } catch { throw new Error('File bukan gambar yang didukung.'); }
-  return uploadRawToGithub(blob, sub, 'jpg');
 }
 
 /* ================= KONTAK ================= */
@@ -1776,9 +545,6 @@ function listenMessages() {
           bub.append(im);
         } else if (t.startsWith('[web]')) {
           bub.append(buildWebPreview(t.slice(5)));
-        } else if (t.startsWith('[audio]')) {
-          const au = el('audio', 'msg-audio'); au.controls = true; au.preload = 'metadata'; au.src = t.slice(7);
-          bub.append(au);
         } else { const x = el('div', 'message-text'); x.textContent = t; bub.append(x); }
       }
 
@@ -1818,7 +584,7 @@ function openMsgMenu(m, mine) {
   const canRecall = mine && !m.deleted && (Date.now() - (Number(m.createdAt) || 0)) < RECALL_LIMIT_MS;
   const rawText = String(m.text || '');
   const isWeb = rawText.startsWith('[web]');
-  const canCopy = !m.deleted && !rawText.startsWith('[img]') && !rawText.startsWith('[audio]');
+  const canCopy = !m.deleted && !rawText.startsWith('[img]');
   sheet.innerHTML = '';
   const addBtn = (label, fn) => { const b = el('button'); b.type = 'button'; b.textContent = label; b.onclick = () => { sheet.classList.add('hidden'); fn(); }; sheet.append(b); };
   if (!m.deleted) addBtn('↩ Balas', () => setReply(m));
@@ -1894,8 +660,6 @@ function cleanup() {
   S.offContacts?.(); S.offMsgs?.();
   Object.values(S.watch).forEach(f => f?.());
   S.presenceCancel?.();
-  offIncomingCalls?.(); offIncomingCalls = null; hideIncomingCallUI();
-  if (callState.pc) endCallLocal(null);
   Object.assign(S, { offContacts: null, offMsgs: null, watch: {}, presenceCancel: null, initUid: null, unread: {}, last: {}, peers: {} });
   updateBadge();
 }
@@ -1905,7 +669,7 @@ async function initChat(user) {
   S.initUid = user.uid;
   try {
     await waitFor(ensureProfile(user), 20000); setView('chat'); listenContacts(); setPresence(true); updateInstallUI();
-    updateNotifBtn(); updateNotifBanner(); maybeAutoAskNotif(); logDeviceInfo(); ensureAiContact(); listenIncomingCalls();
+    updateNotifBtn(); updateNotifBanner(); maybeAutoAskNotif(); logDeviceInfo(); ensureAiContact();
   } catch (e) { S.initUid = null; throw e; }
 }
 async function logout() {
@@ -2146,26 +910,10 @@ function buildUI() {
     `;
     document.head.append(iconStyle);
   }
-
-  const file = el('input');
-  file.type = 'file';
-  file.accept = 'image/*';
-  file.className = 'hidden';
-  file.onchange = e => {
-    const f = e.target.files[0];
-    e.target.value = '';
-    sendImage(f);
-  };
+  const file = el('input'); file.type = 'file'; file.accept = 'image/*'; file.className = 'hidden';
+  file.onchange = e => { const f = e.target.files[0]; e.target.value = ''; sendImage(f); };
   document.body.append(file);
-
-  const att = el(
-    'button',
-    'action-icon'
-  );
-
-  att.type = 'button';
-  att.id = 'attachButton';
-
+  const att = el('button', 'action-icon'); att.type = 'button'; att.id = 'attachButton';
   att.innerHTML = `
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -2184,224 +932,63 @@ function buildUI() {
     <path d="M3 16l5-5 4 4 2.5-2.5L21 16.5"/>
   </svg>
 `;
-
-  att.setAttribute(
-    'aria-label',
-    'Kirim gambar'
-  );
-
+  att.setAttribute('aria-label', 'Kirim gambar');
   att.onclick = () => file.click();
-
   $('emojiButton')?.after(att);
-
-  /* ================= MICROPHONE ICON ================= */
-
-  const micBtn =
-    el(
-      'button',
-      'action-icon'
-    );
-
-  micBtn.type = 'button';
-  micBtn.id = 'micButton';
-
-  micBtn.title =
-    'Rekam pesan suara';
-
-  micBtn.setAttribute(
-    'aria-label',
-    'Rekam pesan suara'
-  );
-
-  const micIcon = el('i');
-
-  micIcon.className =
-    'bi bi-mic-fill';
-
-  micBtn.append(
-    micIcon
-  );
-
-  micBtn.onclick = () => {
-    mediaRecorder
-      ? stopRecording(true)
-      : startRecording();
-  };
-
-  att.after(micBtn);
-
-  const ep = el(
-    'div',
-    'emoji-panel hidden'
-  );
-
-  ep.id = 'emojiPanel';
-
-  Array.from(
-    '😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅🙈🙉🙊🙂‍↕️😄😾😿🙀🚐🚑🚒🚓🚔🚕🚖🚗🏎🏍✈️🛫'
-  ).forEach(x => {
-    const b = el('button');
-    b.type = 'button';
-    b.textContent = x;
-    b.onclick = () => {
-      const i = $('messageInput');
-      i.value += x;
-      i.focus();
-    };
+  const ep = el('div', 'emoji-panel hidden'); ep.id = 'emojiPanel';
+  Array.from('😀😂😊😍🥰😘😎🤔😢😭😡👍👎🙏👏🔥💖🎉✨🙌💪🤝😴🤗😅🙈🙉🙊🙂‍↕️😄😾😿🙀🚐🚑🚒🚓🚔🚕🚖🚗🏎🏍✈️🛫').forEach(x => {
+    const b = el('button'); b.type = 'button'; b.textContent = x;
+    b.onclick = () => { const i = $('messageInput'); i.value += x; i.focus(); };
     ep.append(b);
   });
-
   $('activeConversation')?.append(ep);
-
-  $('emojiButton')?.addEventListener(
-    'click',
-    () => ep.classList.toggle('hidden')
-  );
-
-  $('messageInput')?.addEventListener(
-    'focus',
-    () => {
-      ep.classList.add('hidden');
-      setTimeout(() => scrollTo(0, 0), 50);
-    }
-  );
+  $('emojiButton')?.addEventListener('click', () => ep.classList.toggle('hidden'));
+  $('messageInput')?.addEventListener('focus', () => { ep.classList.add('hidden'); setTimeout(() => scrollTo(0, 0), 50); });
 
   /* banner pasang aplikasi */
-  const bar = el(
-    'div',
-    'install-bar hidden'
-  );
-
-  bar.id = 'installBar';
-
-  bar.innerHTML =
-    '<img src="img/icon-192.png" alt=""><div><strong>Pasang aplikasi</strong><span>Buka lebih cepat dari layar utama.</span></div><button class="primary" type="button" id="installGo">Unduh</button><button class="action-icon" type="button" id="installX" aria-label="Tutup">×</button>';
-
+  const bar = el('div', 'install-bar hidden'); bar.id = 'installBar';
+  bar.innerHTML = '<img src="img/icon-192.png" alt=""><div><strong>Pasang aplikasi</strong><span>Buka lebih cepat dari layar utama.</span></div><button class="primary" type="button" id="installGo">Unduh</button><button class="action-icon" type="button" id="installX" aria-label="Tutup">×</button>';
   document.body.append(bar);
-
   $('installGo').onclick = doInstall;
-
-  $('installX').onclick = () => {
-    S.barHidden = true;
-    updateInstallUI();
-  };
+  $('installX').onclick = () => { S.barHidden = true; updateInstallUI(); };
 
   /* banner pengingat notifikasi (selama izin masih "belum dipilih") */
-  const nb = el(
-    'div',
-    'install-bar hidden'
-  );
-
-  nb.id = 'notifBar';
-
-  nb.innerHTML =
-    '<img src="img/icon-192.png" alt=""><div><strong>Aktifkan notifikasi</strong><span>Supaya tahu saat ada pesan masuk.</span></div><button class="primary" type="button" id="notifGo">Aktifkan</button><button class="action-icon" type="button" id="notifX" aria-label="Tutup">×</button>';
-
+  const nb = el('div', 'install-bar hidden'); nb.id = 'notifBar';
+  nb.innerHTML = '<img src="img/icon-192.png" alt=""><div><strong>Aktifkan notifikasi</strong><span>Supaya tahu saat ada pesan masuk.</span></div><button class="primary" type="button" id="notifGo">Aktifkan</button><button class="action-icon" type="button" id="notifX" aria-label="Tutup">×</button>';
   document.body.append(nb);
-
   $('notifGo').onclick = askNotif;
-
-  $('notifX').onclick = () =>
-    nb.classList.add('hidden');
+  $('notifX').onclick = () => nb.classList.add('hidden');
 
   /* bar balasan di atas composer */
-  const rb = el(
-    'div',
-    'reply-bar hidden'
-  );
-
-  rb.id = 'replyBar';
-
-  rb.innerHTML =
-    '<div class="rb-line"><div class="rb-meta"><strong class="rb-name"></strong><span class="rb-text"></span></div><button class="action-icon" type="button" id="replyCancel" aria-label="Batal balas">×</button></div>';
-
+  const rb = el('div', 'reply-bar hidden'); rb.id = 'replyBar';
+  rb.innerHTML = '<div class="rb-line"><div class="rb-meta"><strong class="rb-name"></strong><span class="rb-text"></span></div><button class="action-icon" type="button" id="replyCancel" aria-label="Batal balas">×</button></div>';
   $('messageForm')?.before(rb);
-
-  $('replyCancel').onclick =
-    clearReply;
+  $('replyCancel').onclick = clearReply;
 
   /* menu aksi pesan (tekan-lama) */
-  const mm = el(
-    'div',
-    'msg-menu hidden'
-  );
-
-  mm.id = 'msgMenu';
-
+  const mm = el('div', 'msg-menu hidden'); mm.id = 'msgMenu';
   document.body.append(mm);
 
-  installCallButtons();
-  updateInstallUI();
-  applyTheme(getTheme());
+  updateInstallUI(); applyTheme(getTheme());
 }
-
 buildUI();
 
 /* ================= PWA, SERVICE WORKER, VISIBILITY ================= */
-addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  S.install = e;
-  updateInstallUI();
-});
-
-addEventListener('appinstalled', () => {
-  S.install = null;
-  updateInstallUI();
-  toast('Aplikasi terpasang.');
-});
-
-matchMedia('(display-mode: standalone)').addEventListener?.(
-  'change',
-  updateInstallUI
-);
-
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.install = e; updateInstallUI(); });
+addEventListener('appinstalled', () => { S.install = null; updateInstallUI(); toast('Aplikasi terpasang.'); });
+matchMedia('(display-mode: standalone)').addEventListener?.('change', updateInstallUI);
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
-
-  navigator.serviceWorker.addEventListener(
-    'message',
-    e => {
-      const u = e.data?.openUid;
-      if (u && S.contacts[u]) {
-        openConversation(u);
-      }
-    }
-  );
+  navigator.serviceWorker.addEventListener('message', e => { const u = e.data?.openUid; if (u && S.contacts[u]) openConversation(u); });
 }
+document.addEventListener('visibilitychange', () => {
+  const vis = document.visibilityState === 'visible';
+  setPresence(vis);
+  if (vis && S.activeUid && S.unread[S.activeUid]) { S.unread[S.activeUid] = 0; renderContacts(); updateBadge(); }
+});
+addEventListener('pagehide', () => setPresence(false));
 
-document.addEventListener(
-  'visibilitychange',
-  () => {
-    const vis =
-      document.visibilityState === 'visible';
 
-    setPresence(vis);
-
-    if (
-      vis &&
-      S.activeUid &&
-      S.unread[S.activeUid]
-    ) {
-      S.unread[S.activeUid] = 0;
-      renderContacts();
-      updateBadge();
-    }
-  }
-);
-
-addEventListener(
-  'pagehide',
-  () => {
-    setPresence(false);
-
-    if (callState.chatId) {
-      set(
-        callRef(callState.chatId),
-        null
-      ).catch(() => {});
-    }
-  }
-);
 
 /* =========================================================
    ARINEX ADD-ON
@@ -2633,8 +1220,7 @@ addEventListener(
   const originalAddContactByEmail = addContactByEmail;
 
   addContactByEmail = async function (value) {
-    const result =
-      await originalAddContactByEmail(value);
+    const result = await originalAddContactByEmail(value);
 
     if (result?.uid) {
       restoreChat(result.uid);
@@ -2648,50 +1234,31 @@ addEventListener(
      ========================================================= */
 
   function installDeleteButton() {
-    const menuBtn =
-      $('chatMenuButton');
+    const menuBtn = $('chatMenuButton');
 
     if (!menuBtn) return;
     if ($('arinexChatDeleteButton')) return;
 
-    const btn =
-      document.createElement('button');
+    const btn = document.createElement('button');
 
     btn.type = 'button';
-    btn.id =
-      'arinexChatDeleteButton';
+    btn.id = 'arinexChatDeleteButton';
+    btn.className = 'action-icon arinex-chat-delete-btn';
 
-    btn.className =
-      'action-icon arinex-chat-delete-btn';
-
-    const img =
-      document.createElement('img');
-
-    img.src =
-      'img/sampah.png';
-
+    /* ---------- Icon menggunakan gambar ---------- */
+    const img = document.createElement('img');
+    img.src = 'img/sampah.png';
     img.alt = '';
     img.draggable = false;
 
     btn.append(img);
 
-    btn.setAttribute(
-      'aria-label',
-      'Hapus chat'
-    );
+    btn.setAttribute('aria-label', 'Hapus chat');
+    btn.title = 'Hapus chat';
 
-    btn.title =
-      'Hapus chat';
+    btn.addEventListener('click', deleteActiveChat);
 
-    btn.addEventListener(
-      'click',
-      deleteActiveChat
-    );
-
-    menuBtn.insertAdjacentElement(
-      'afterend',
-      btn
-    );
+    menuBtn.insertAdjacentElement('afterend', btn);
   }
 
   /* =========================================================
@@ -2702,9 +1269,7 @@ addEventListener(
     const uid = S.activeUid;
 
     if (!uid) {
-      toast(
-        'Buka percakapan terlebih dahulu.'
-      );
+      toast('Buka percakapan terlebih dahulu.');
       return;
     }
 
@@ -2713,17 +1278,18 @@ addEventListener(
       S.contacts[uid]?.displayName ||
       'Pengguna';
 
-    const ok =
-      window.confirm(
-        `Hapus chat dengan ${peer}?\n\n` +
-        `Riwayat pesan sebelum sekarang akan disembunyikan ` +
-        `dari perangkat ini.`
-      );
+    const ok = window.confirm(
+      `Hapus chat dengan ${peer}?\n\n` +
+      `Riwayat pesan sebelum sekarang akan disembunyikan ` +
+      `dari perangkat ini.`
+    );
 
     if (!ok) return;
 
+    /* Simpan waktu penghapusan */
     markChatDeleted(uid);
 
+    /* Hentikan listener pesan */
     S.watch[uid]?.();
 
     if (S.watch[uid]) {
@@ -2732,13 +1298,16 @@ addEventListener(
 
     S.unread[uid] = 0;
 
+    /*
+     * clearActive() sudah:
+     * - mematikan listener aktif
+     * - mengosongkan chat
+     * - kembali ke daftar kontak
+     */
     clearActive();
 
     updateBadge();
-
-    toast(
-      'Obrolan dihapus dari perangkat ini.'
-    );
+    toast('Obrolan dihapus dari perangkat ini.');
   }
 
   /* =========================================================
@@ -2749,56 +1318,57 @@ addEventListener(
     if (!element) return;
     if (element.dataset.linkified === '1') return;
 
-    const text =
-      element.textContent || '';
+    const text = element.textContent || '';
 
-    const urlRegex =
-      /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi;
+    /*
+     * URL yang didukung:
+     * https://example.com
+     * http://example.com
+     * www.example.com
+     */
+    const urlRegex = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi;
 
     if (!urlRegex.test(text)) {
       element.dataset.linkified = '1';
       return;
     }
 
+    /* reset regex state */
     urlRegex.lastIndex = 0;
 
-    const fragment =
-      document.createDocumentFragment();
+    const fragment = document.createDocumentFragment();
 
     let lastIndex = 0;
     let match;
 
-    while (
-      (match = urlRegex.exec(text)) !== null
-    ) {
+    while ((match = urlRegex.exec(text)) !== null) {
       const raw = match[0];
       const start = match.index;
       const end = start + raw.length;
 
+      /*
+       * Jangan ikutkan tanda baca yang biasanya
+       * berada setelah URL.
+       */
       let urlText = raw;
       let trailing = '';
 
-      const trimMatch =
-        urlText.match(/([.,!?;:]+)$/);
+      const trimMatch = urlText.match(/([.,!?;:]+)$/);
 
       if (trimMatch) {
         trailing = trimMatch[1];
 
-        urlText =
-          urlText.slice(
-            0,
-            urlText.length -
-              trailing.length
-          );
+        urlText = urlText.slice(
+          0,
+          urlText.length - trailing.length
+        );
       }
 
+      /* Teks sebelum URL */
       if (start > lastIndex) {
         fragment.append(
           document.createTextNode(
-            text.slice(
-              lastIndex,
-              start
-            )
+            text.slice(lastIndex, start)
           )
         );
       }
@@ -2810,55 +1380,42 @@ addEventListener(
       }
 
       try {
-        const parsed =
-          new URL(href);
+        const parsed = new URL(href);
 
+        /*
+         * Hanya izinkan HTTP/HTTPS.
+         */
         if (
           parsed.protocol !== 'http:' &&
           parsed.protocol !== 'https:'
         ) {
-          throw new Error(
-            'Protocol tidak diizinkan.'
-          );
+          throw new Error('Protocol tidak diizinkan.');
         }
 
-        const a =
-          document.createElement('a');
+        const a = document.createElement('a');
 
-        a.className =
-          'arinex-msg-link';
-
-        a.href =
-          parsed.href;
-
-        a.target =
-          '_blank';
-
-        a.rel =
-          'noopener noreferrer';
-
-        a.textContent =
-          urlText;
-
-        a.title =
-          parsed.href;
+        a.className = 'arinex-msg-link';
+        a.href = parsed.href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = urlText;
+        a.title = parsed.href;
 
         fragment.append(a);
 
         if (trailing) {
           fragment.append(
-            document.createTextNode(
-              trailing
-            )
+            document.createTextNode(trailing)
           );
         }
 
       } catch {
-
+        /*
+         * Kalau URL tidak valid, tampilkan
+         * sebagai teks biasa.
+         */
         fragment.append(
-          document.createTextNode(
-            raw
-          )
+          document.createTextNode(raw)
         );
       }
 
@@ -2868,18 +1425,14 @@ addEventListener(
     if (lastIndex < text.length) {
       fragment.append(
         document.createTextNode(
-          text.slice(
-            lastIndex
-          )
+          text.slice(lastIndex)
         )
       );
     }
 
     element.textContent = '';
     element.append(fragment);
-
-    element.dataset.linkified =
-      '1';
+    element.dataset.linkified = '1';
   }
 
   /* =========================================================
@@ -2887,89 +1440,56 @@ addEventListener(
      ========================================================= */
 
   function cleanOldMessages() {
-    const list =
-      $('messageList');
+    const list = $('messageList');
 
-    if (!list || !S.activeUid)
-      return;
+    if (!list || !S.activeUid) return;
 
-    const clearedAt =
-      getChatClearedAt(
-        S.activeUid
-      );
+    const clearedAt = getChatClearedAt(S.activeUid);
 
     if (!clearedAt) return;
 
-    list
-      .querySelectorAll(
-        '.message-row[data-id]'
-      )
-      .forEach(row => {
+    list.querySelectorAll('.message-row[data-id]').forEach(row => {
+      const id = row.dataset.id;
+      const message = msgCache[id];
 
-        const id =
-          row.dataset.id;
+      if (!message) return;
 
-        const message =
-          msgCache[id];
+      const ts = Number(message.createdAt) || 0;
 
-        if (!message) return;
-
-        const ts =
-          Number(
-            message.createdAt
-          ) || 0;
-
-        if (
-          ts > 0 &&
-          ts <= clearedAt
-        ) {
-          row.remove();
-        }
-      });
-
-    const separators =
-      Array.from(
-        list.querySelectorAll(
-          '.day-sep'
-        )
-      );
-
-    separators.forEach(
-      sep => {
-
-        let node =
-          sep.nextElementSibling;
-
-        let hasMessage = false;
-
-        while (node) {
-
-          if (
-            node.classList.contains(
-              'day-sep'
-            )
-          ) {
-            break;
-          }
-
-          if (
-            node.classList.contains(
-              'message-row'
-            )
-          ) {
-            hasMessage = true;
-            break;
-          }
-
-          node =
-            node.nextElementSibling;
-        }
-
-        if (!hasMessage) {
-          sep.remove();
-        }
+      if (ts > 0 && ts <= clearedAt) {
+        row.remove();
       }
+    });
+
+    /*
+     * Bersihkan separator tanggal yang sudah tidak
+     * memiliki pesan.
+     */
+    const separators = Array.from(
+      list.querySelectorAll('.day-sep')
     );
+
+    separators.forEach(sep => {
+      let node = sep.nextElementSibling;
+      let hasMessage = false;
+
+      while (node) {
+        if (node.classList.contains('day-sep')) {
+          break;
+        }
+
+        if (node.classList.contains('message-row')) {
+          hasMessage = true;
+          break;
+        }
+
+        node = node.nextElementSibling;
+      }
+
+      if (!hasMessage) {
+        sep.remove();
+      }
+    });
   }
 
   /* =========================================================
@@ -2977,8 +1497,7 @@ addEventListener(
      ========================================================= */
 
   function enhanceMessages() {
-    const list =
-      $('messageList');
+    const list = $('messageList');
 
     if (!list) return;
 
@@ -2988,9 +1507,7 @@ addEventListener(
       .querySelectorAll(
         '.message-text:not(.recalled-text)'
       )
-      .forEach(
-        linkifyMessage
-      );
+      .forEach(linkifyMessage);
   }
 
   /* =========================================================
@@ -2999,37 +1516,23 @@ addEventListener(
      link otomatis diaktifkan lagi.
      ========================================================= */
 
-  const messageList =
-    $('messageList');
+  const messageList = $('messageList');
 
   if (messageList) {
-
     let enhanceFrame = 0;
 
-    const observer =
-      new MutationObserver(
-        () => {
+    const observer = new MutationObserver(() => {
+      cancelAnimationFrame(enhanceFrame);
 
-          cancelAnimationFrame(
-            enhanceFrame
-          );
+      enhanceFrame = requestAnimationFrame(() => {
+        enhanceMessages();
+      });
+    });
 
-          enhanceFrame =
-            requestAnimationFrame(
-              () => {
-                enhanceMessages();
-              }
-            );
-        }
-      );
-
-    observer.observe(
-      messageList,
-      {
-        childList: true,
-        subtree: true
-      }
-    );
+    observer.observe(messageList, {
+      childList: true,
+      subtree: true
+    });
 
     enhanceMessages();
   }
@@ -3040,11 +1543,13 @@ addEventListener(
 
   installDeleteButton();
 
-  requestAnimationFrame(
-    () => {
-      installDeleteButton();
-      enhanceMessages();
-    }
-  );
+  /*
+   * buildUI() sudah dijalankan sebelum blok ini,
+   * jadi tombol header bisa langsung dibuat.
+   */
+  requestAnimationFrame(() => {
+    installDeleteButton();
+    enhanceMessages();
+  });
 
 })();
