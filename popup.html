@@ -2,81 +2,94 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Helpdesk Popup - Classic .NET</title>
+<!-- Desktop mode: phones render the page at a fixed 1024px desktop width -->
+<meta name="viewport" content="width=1024">
+<title>Arinex - Windows Helpdesk</title>
 <style>
-:root{
-  --face:#ECE9D8; --blue:#245EDC; --navy:#1F4E9A; --red:#C8201E; --edge:#0A246A;
-  --field:#7F9DB9; --text:#000;
-}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{font:11px/1.4 Tahoma,"Segoe UI",Verdana,sans-serif;color:var(--text);
-  background:#3A6EA5 linear-gradient(160deg,#5A8FD4 0%,#3A6EA5 55%,#2B558A 100%);}
-.demo{position:fixed;left:12px;bottom:12px}
+html,body{height:100%;margin:0;overflow:hidden}
+body{font:11px Tahoma,"Segoe UI",Verdana,sans-serif;color:#000;cursor:default;background:#fff}
 
-.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
-  background:rgba(0,0,40,.35);padding:12px;z-index:10}
+/* ===== Windows XP (Luna) window ===== */
+.overlay{position:fixed;left:0;right:0;top:0;bottom:0;display:none;align-items:center;justify-content:center;z-index:10}
 .overlay.on{display:flex}
 .overlay.top{z-index:20}
-
-.win{background:var(--face);border:1px solid var(--edge);border-top:0;border-radius:8px 8px 0 0;
-  box-shadow:3px 4px 12px rgba(0,0,0,.55);width:100%;max-width:420px;position:relative}
-.win.wide{max-width:440px}
-.title{height:28px;display:flex;align-items:center;gap:6px;padding:0 4px 0 7px;cursor:move;user-select:none;
-  border-radius:7px 7px 0 0;color:#fff;font-weight:bold;font-size:12px;text-shadow:1px 1px #0F1089;
-  background:linear-gradient(#0997FF 0,#0053EE 8%,#0050EE 40%,#0066FF 88%,#0066FF 93%,#005BFF 95%,#003DD7 96%,#003DD7 100%)}
-.title img{width:16px;height:16px;object-fit:contain}
+.win{width:430px;padding:0 3px 3px;background:#0054E3;border:1px solid #0831D9;border-top:0;
+  border-radius:8px 8px 0 0;box-shadow:2px 3px 8px rgba(0,0,0,.5),inset 1px 0 #3D95FF,inset -1px 0 #002FA8}
+.win.wide{width:470px}
+.win.small{width:350px}
+.title{height:30px;margin:0 -3px;padding:0 5px 0 7px;display:flex;align-items:center;gap:6px;user-select:none;
+  border-radius:8px 8px 0 0;color:#fff;touch-action:none;
+  font:bold 13px "Trebuchet MS",Tahoma,sans-serif;text-shadow:1px 1px #0F1089;
+  background:linear-gradient(#0997FF 0,#0053EE 8%,#0050EE 40%,#0066FF 88%,#0066FF 93%,#005BFF 95%,#003DD7 96%,#003DD7 100%);
+  box-shadow:inset 0 1px #3C9DFF}
 .title span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.x{width:21px;height:21px;border:1px solid #fff;border-radius:3px;color:#fff;font:bold 12px/17px Tahoma,sans-serif;
-  text-align:center;padding:0;cursor:pointer;text-shadow:none;
-  background:radial-gradient(circle at 30% 25%,#F4A58B,#D8553A 60%,#B7351C)}
+.title img{width:16px;height:16px;object-fit:contain}
+.x{position:relative;width:21px;height:21px;padding:0;border:1px solid #fff;border-radius:3px;cursor:default;
+  background:linear-gradient(135deg,#E9977E,#DA5A32 50%,#C23C14);box-shadow:inset -1px -1px 2px rgba(120,20,0,.5)}
+.x::before,.x::after{content:"";position:absolute;left:4px;top:8px;width:11px;height:2px;background:#fff;
+  border-radius:1px;box-shadow:0 0 1px rgba(0,0,0,.5)}
+.x::before{transform:rotate(45deg)}.x::after{transform:rotate(-45deg)}
 .x:hover{filter:brightness(1.12)}
+
+/* CSS warning icon (title bar) */
+.wico{position:relative;display:block;width:16px;height:16px;flex:none}
+.wico::before,.wico::after{content:"";position:absolute;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.wico::before{inset:0;background:#6E5200}
+.wico::after{left:1.5px;right:1.5px;top:3px;bottom:1px;background:linear-gradient(#FFF08A,#F8C400 60%,#E7A900)}
+.wico b{position:absolute;left:7px;top:7px;width:2px;height:4px;background:#000;z-index:1;text-shadow:none}
+.wico b::after{content:"";position:absolute;left:0;top:5px;width:2px;height:2px;background:#000}
+
+.face{background:#ECE9D8}
 .body{padding:14px 14px 12px}
+.banner{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;
+  border-bottom:1px solid #ACA899;box-shadow:0 1px #fff}
+.banner div{flex:1}
+.banner b{display:block;font-size:12px;margin-bottom:2px}
+.banner span{color:#333}
+.banner img{width:52px;height:52px;object-fit:contain}
 
 .msg{display:flex;gap:14px;align-items:flex-start}
-.msg img.ico{width:72px;height:72px;object-fit:contain;flex:none;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.35))}
-.msg h2{margin:2px 0 6px;font-size:13px;color:var(--navy)}
-.msg p{margin:0 0 6px}
+.msg img.ico{width:72px;height:72px;object-fit:contain;flex:none}
+.msg h2{margin:2px 0 8px;font:bold 13px Tahoma,sans-serif;color:#000}
+.msg p{margin:0 0 7px;line-height:1.45}
 .msg p.sub{color:#444}
 .sico{width:32px;height:32px;flex:none}
-.hr{border:0;border-top:1px solid #fff;border-bottom:1px solid #ACA899;margin:12px 0}
-.btns{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.hr{border:0;border-top:1px solid #ACA899;border-bottom:1px solid #fff;margin:12px 0}
+.btns{display:flex;justify-content:flex-end;gap:8px}
 
-.btn{min-width:84px;height:25px;padding:0 12px;font:11px Tahoma,"Segoe UI",sans-serif;color:#000;cursor:pointer;
-  border:1px solid #003C74;border-radius:3px;
-  background:linear-gradient(#fff,#ECEBE5 86%,#D8D0C4)}
-.btn:hover{box-shadow:inset 0 0 0 2px #F8B330}
-.btn:active{background:linear-gradient(#CDCAC3,#E3E3DB 15%,#E5E5DE)}
-.btn.def{box-shadow:inset 0 0 0 2px #7BA0F5}
-.btn.def:hover{box-shadow:inset 0 0 0 2px #F8B330}
-.btn:focus-visible,.x:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:1px dotted #000;outline-offset:-4px}
+/* XP push button */
+.btn{min-width:75px;height:23px;padding:0 12px;font:11px Tahoma,"Segoe UI",sans-serif;color:#000;cursor:default;
+  border:1px solid #003C74;border-radius:3px;background:linear-gradient(#fff 0,#ECEBE5 86%,#D8D0C4 100%)}
+.btn.def{box-shadow:inset -1px 1px #CEE7FF,inset 1px 2px #98B8EA,inset -2px 2px #BCD4F6,inset 1px -1px #89ADE4,inset 2px -2px #89ADE4}
+.btn:hover{box-shadow:inset -1px 1px #FFF0CF,inset 1px 2px #FDD889,inset -2px 2px #FBC761,inset 2px -2px #E5A01A}
+.btn:active{background:linear-gradient(#CDCAC3 0,#E3E3DB 8%,#E5E5DE 94%,#F2F2F1 100%);box-shadow:none}
+.btn:focus-visible{outline:1px dotted #000;outline-offset:-4px}
 
-fieldset{border:1px solid #D0D0BF;border-radius:4px;margin:0;padding:8px 10px 10px;background:#F5F4EA}
-legend{color:#0046D5;padding:0 4px}
-.row{display:grid;grid-template-columns:104px 1fr;gap:6px;align-items:center;margin:6px 0}
+fieldset{border:1px solid #D0D0BF;border-radius:4px;margin:0;padding:8px 10px 10px}
+legend{color:#0046D5;padding:0 3px}
+.row{display:grid;grid-template-columns:112px 1fr;gap:6px;align-items:center;margin:7px 0}
 .row.top{align-items:start}
 .row label{white-space:nowrap}
-input,select,textarea{width:100%;font:11px Tahoma,"Segoe UI",sans-serif;border:1px solid var(--field);
-  border-radius:0;background:#fff;padding:3px 4px;height:23px;color:#000}
-textarea{height:78px;resize:vertical}
-input:focus,select:focus,textarea:focus{border-color:#316AC5}
-.hint{grid-column:2;color:#555;font-size:10px;margin-top:-2px}
-@media (max-width:420px){.row{grid-template-columns:1fr}.hint{grid-column:1}.msg img.ico{width:52px;height:52px}}
+input,select,textarea{width:100%;font:11px Tahoma,"Segoe UI",sans-serif;border:1px solid #7F9DB9;border-radius:0;
+  background:#fff;padding:2px 4px;height:21px;color:#000}
+textarea{height:80px;resize:vertical;padding:3px 4px}
+input:focus,textarea:focus,select:focus{outline:0;border-color:#316AC5}
+select{appearance:none;-webkit-appearance:none;padding-right:20px;
+  background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='17' height='19'><rect x='.5' y='.5' width='16' height='18' rx='2' fill='%23C3D5F6' stroke='%23fff'/><path d='M4.5 7.5l4 4 4-4' fill='none' stroke='%234D6185' stroke-width='2'/></svg>") no-repeat right 1px center}
+.hint{margin:0 0 2px 118px;color:#444}
 </style>
 </head>
 <body>
 
-<button class="btn demo" id="reopen" type="button">Simulate server error</button>
-
-<!-- Popup 1: server tidak tersambung -->
+<!-- Popup 1: server not found -->
 <div class="overlay" id="dlgError" role="dialog" aria-modal="true" aria-labelledby="errTitle">
   <div class="win">
-    <div class="title"><img src="helpdesk.png" alt=""><span id="errTitle">ARINEX SYSTEM ERROR</span>
-      <button class="x" data-close aria-label="Close">X</button></div>
-    <div class="body">
+    <div class="title"><i class="wico"><b></b></i><span id="errTitle">ERRNO-002!</span>
+      <button class="x" data-close aria-label="Close"></button></div>
+    <div class="face body">
       <div class="msg">
-        <img class="ico" src="helpdesk.png" alt="Helpdesk">
+        <img class="ico" src="warning.png" alt="Helpdesk">
         <div>
           <h2>Server Host Not Found</h2>
           <p>The connection to the Arinex server has been interrupted or the host is currently unavailable.</p>
@@ -93,28 +106,34 @@ input:focus,select:focus,textarea:focus{border-color:#316AC5}
   </div>
 </div>
 
-<!-- Popup 2: form helpdesk -->
+<!-- Popup 2: helpdesk form (header logo = helpdesk.png) -->
 <div class="overlay" id="dlgForm" role="dialog" aria-modal="true" aria-labelledby="frmTitle">
   <div class="win wide">
     <div class="title"><img src="helpdesk.png" alt=""><span id="frmTitle">Contact Helpdesk</span>
-      <button class="x" data-close aria-label="Close">X</button></div>
-    <div class="body">
-      <fieldset>
-        <legend>Merchant Details</legend>
-        <div class="row"><label for="fMid">Merchant ID:</label>
-          <input id="fMid" inputmode="numeric" maxlength="12" autocomplete="off"></div>
-        <div class="row"><label for="fEmail">Email:</label>
-          <input id="fEmail" type="email" autocomplete="email"></div>
-        <div class="row top"><label for="fDesc">Problem description:</label>
-          <textarea id="fDesc"></textarea></div>
-        <div class="row"><label for="fSla">SLA Level:</label>
-          <select id="fSla"></select></div>
-        <div class="hint" id="slaHint"></div>
-      </fieldset>
-      <hr class="hr">
-      <div class="btns">
-        <button class="btn def" id="btnSend" type="button">Send</button>
-        <button class="btn" id="btnCancel" type="button">Cancel</button>
+      <button class="x" data-close aria-label="Close"></button></div>
+    <div class="face">
+      <div class="banner">
+        <div><b>Arinex Helpdesk</b><span>Fill in the form below to submit a support request.</span></div>
+        <img src="helpdesk.png" alt="Arinex Helpdesk">
+      </div>
+      <div class="body">
+        <fieldset>
+          <legend>Merchant Details</legend>
+          <div class="row"><label for="fMid">Merchant ID:</label>
+            <input id="fMid" inputmode="numeric" maxlength="12" autocomplete="off"></div>
+          <div class="row"><label for="fEmail">Email:</label>
+            <input id="fEmail" type="email" autocomplete="email"></div>
+          <div class="row top"><label for="fDesc">Problem description:</label>
+            <textarea id="fDesc"></textarea></div>
+          <div class="row"><label for="fSla">SLA Level:</label>
+            <select id="fSla"></select></div>
+          <div class="hint" id="slaHint"></div>
+        </fieldset>
+        <hr class="hr">
+        <div class="btns">
+          <button class="btn def" id="btnSend" type="button">Send</button>
+          <button class="btn" id="btnCancel" type="button">Cancel</button>
+        </div>
       </div>
     </div>
   </div>
@@ -122,24 +141,23 @@ input:focus,select:focus,textarea:focus{border-color:#316AC5}
 
 <!-- MessageBox -->
 <div class="overlay top" id="dlgMsg" role="alertdialog" aria-modal="true" aria-labelledby="mTitle">
-  <div class="win">
-    <div class="title"><span id="mTitle"></span><button class="x" data-mclose aria-label="Close">X</button></div>
-    <div class="body">
+  <div class="win small">
+    <div class="title"><i class="wico"><b></b></i><span id="mTitle"></span>
+      <button class="x" data-mclose aria-label="Close"></button></div>
+    <div class="face body">
       <div class="msg"><div id="mIcon"></div><p id="mText" style="margin-top:6px"></p></div>
-      <hr class="hr">
-      <div class="btns"><button class="btn def" id="mOk" type="button">OK</button></div>
+      <div class="btns" style="margin-top:14px"><button class="btn def" id="mOk" type="button">OK</button></div>
     </div>
   </div>
 </div>
 
 <script>
-/* ====== KONFIGURASI ====== */
+/* ====== CONFIG ====== */
 const CONFIG = {
-  infoUrl: "info.html",                 // static web page
-  mailTo: "cs@arinex.my.id",            // tujuan (simulation only, no real email is sent)
+  infoUrl: "info.html",
+  mailTo: "cs@arinex.my.id",            // simulation only, no real email is sent
   simulateDelay: 900,                   // "sending" delay in ms
-  // Data merchant dummy ("victim") untuk validasi
-  merchants: { "000101": "victim@arinex.my.id" }
+  merchants: { "000101": "victim@arinex.my.id" }   // dummy merchant data
 };
 const SLA = {
   "Critical": "within 1 hour",
@@ -149,9 +167,10 @@ const SLA = {
 };
 
 const $ = id => document.getElementById(id);
+
 const show = (el, on) => el.classList.toggle("on", on);
 
-/* ====== MessageBox ala WinForms ====== */
+/* ====== XP MessageBox ====== */
 const ICONS = {
   error:'<svg class="sico" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#C8201E" stroke="#fff" stroke-width="2"/><path d="M10 10l12 12M22 10L10 22" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>',
   info:'<svg class="sico" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#245EDC" stroke="#fff" stroke-width="2"/><path d="M9 16.5l5 5 9-10" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -166,17 +185,16 @@ function msgBox(title, text, type, done){
   show($("dlgMsg"), true);
   $("mOk").focus();
 }
-function closeMsg(){ show($("dlgMsg"), false); if(msgDone){ const f=msgDone; msgDone=null; f(); } }
+function closeMsg(){ show($("dlgMsg"), false); if(msgDone){ const f = msgDone; msgDone = null; f(); } }
 $("mOk").onclick = closeMsg;
 document.querySelector("[data-mclose]").onclick = closeMsg;
 
-/* ====== Popup 1 & 2 ====== */
+/* ====== Popups ====== */
 window.showServerError = () => { show($("dlgForm"), false); show($("dlgError"), true); $("btnHelp").focus(); };
-$("reopen").onclick = showServerError;
 $("btnInfo").onclick = () => { location.href = CONFIG.infoUrl; };
 $("btnHelp").onclick = () => { show($("dlgError"), false); show($("dlgForm"), true); $("fMid").focus(); };
 $("btnCancel").onclick = () => show($("dlgForm"), false);
-document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => b.closest(".overlay").classList.remove("on"));
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => show(b.closest(".overlay"), false));
 document.addEventListener("keydown", e => {
   if(e.key !== "Escape") return;
   if($("dlgMsg").classList.contains("on")) closeMsg();
@@ -189,7 +207,7 @@ $("fSla").value = "Medium";
 const upd = () => $("slaHint").textContent = "Follow-up target: " + SLA[$("fSla").value];
 $("fSla").onchange = upd; upd();
 
-/* ====== Submit ====== */
+/* ====== Submit (simulation) ====== */
 let busy = false;
 $("btnSend").onclick = async () => {
   if(busy) return;
@@ -210,7 +228,7 @@ $("btnSend").onclick = async () => {
   try{
     // SIMULATION: no server request, just a delay then treated as success
     await new Promise(r => setTimeout(r, CONFIG.simulateDelay));
-    console.log("[SIMULATION] Email ke " + CONFIG.mailTo, { merchant_id: mid, email, description: desc, sla });
+    console.log("[SIMULATION] Email to " + CONFIG.mailTo, { merchant_id: mid, email, description: desc, sla });
     show($("dlgForm"), false);
     $("fDesc").value = "";
     msgBox("Message sent",
@@ -223,7 +241,7 @@ $("btnSend").onclick = async () => {
   }
 };
 
-/* ====== Dialog bisa digeser lewat title bar ====== */
+/* ====== Drag windows by title bar ====== */
 document.querySelectorAll(".title").forEach(t => {
   const w = t.parentElement; let sx, sy, ox, oy, drag = false;
   t.addEventListener("pointerdown", e => {
