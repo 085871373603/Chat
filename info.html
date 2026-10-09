@@ -156,35 +156,47 @@
 
     /* =====================================================
        TEKS DEDIKASI
-       Perubahan hanya berlaku pada kartu dedikasi.
+       Tipografi, jarak, dan keterbacaan yang diperbaiki.
     ===================================================== */
 
     .dedication {
       padding: 24px 20px;
+
+      color: var(--text-sub);
+      font-size: 15px;
+      line-height: 1.85;
+
+      overflow-wrap: break-word;
+      word-wrap: break-word;
     }
 
     .dedication .dedication-divider {
-      margin: 0 0 22px;
+      margin: 0 0 24px;
 
       color: var(--text-sub);
-      font-size: 12px;
+      font-size: 11px;
       line-height: 1;
       letter-spacing: 4px;
       text-align: center;
 
-      opacity: .8;
+      opacity: .7;
     }
 
     .dedication .dedication-divider:last-child {
-      margin: 24px 0 0;
+      margin: 28px 0 0;
     }
 
     .dedication p {
       margin: 0;
+
+      color: var(--text-sub);
       font-size: 15px;
-      line-height: 1.85;
+      line-height: 1.9;
+      font-weight: 400;
+
       text-align: left;
       overflow-wrap: break-word;
+      word-wrap: break-word;
     }
 
     .dedication p + p {
@@ -192,13 +204,56 @@
     }
 
     .dedication .dedication-heading {
-      margin: 28px 0 14px;
+      margin: 30px 0 16px;
 
       color: var(--text-main);
-      font-size: 19px;
+      font-size: 20px;
       line-height: 1.5;
       font-weight: 600;
       letter-spacing: .1px;
+
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
+
+    .dedication p b,
+    .dedication p strong {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .dedication br {
+      line-height: inherit;
+    }
+
+    /* =====================================================
+       PENYESUAIAN LAYAR KECIL
+    ===================================================== */
+
+    @media (max-width: 380px) {
+      .dedication {
+        padding: 21px 16px;
+        font-size: 14px;
+        line-height: 1.85;
+      }
+
+      .dedication p {
+        font-size: 14px;
+        line-height: 1.85;
+      }
+
+      .dedication p + p {
+        margin-top: 16px;
+      }
+
+      .dedication .dedication-heading {
+        margin-top: 26px;
+        font-size: 19px;
+      }
+
+      .dedication .dedication-divider {
+        letter-spacing: 3px;
+      }
     }
 
     /* =====================================================
@@ -487,22 +542,31 @@
 
         <p class="dedication-divider">— — —</p>
 
-        <p>Tadinya kubuat ini semua agar bisa langsung berkomunikasi lagi sama kamu dengan segala keterbatasan kita yang sekaramg.
-   <br>
+        <p>
+          Tadinya kubuat ini semua agar bisa langsung berkomunikasi lagi sama kamu dengan segala keterbatasan kita yang sekaramg.
+          <br>
           Kadang kadang tidak semua yang berakhir itu harus d kenang
           sebagai kepedihan.
           <br>
           Sebagian dari itu layak dikenang sebagai kehormatan.
         </p>
-        
+
         <p>Gk jarang aku merasa kalau aku masih mau sama kamu, membangun kembali apa yang kita impikan bersama dulu.</p>
-<p>Tapi Aku gk berhak lagi dan kamupun sudah ada yg punya<br>
-pria yang dulu bilang gk mungkin suka sama kamu dunia emang aneh ya</p>
-        <p>Di awal kita bertemu Dulu pernah ku bilang kalau kamu boleh bersama pria asalkan 10× lebih tinggi dariku</p>
-        <p> tapi aku sadar bahwa penilayan itu tergantung sudut pandang, dan siapapun berhak bersamamu yang penting kamu bahagia bersamanya
+
+        <p>
+          Tapi Aku gk berhak lagi dan kamupun sudah ada yg punya<br>
+          pria yang dulu bilang gk mungkin suka sama kamu dunia emang aneh ya
         </p>
-      <br>   <p>Tapi Aku bangga padamu.</p>
-          <br>
+
+        <p>Di awal kita bertemu Dulu pernah ku bilang kalau kamu boleh bersama pria asalkan 10× lebih tinggi dariku</p>
+
+        <p>
+          tapi aku sadar bahwa penilayan itu tergantung sudut pandang, dan siapapun berhak bersamamu yang penting kamu bahagia bersamanya
+        </p>
+
+        <p>Tapi Aku bangga padamu.</p>
+
+        <p>
           Aku tau kamu punya banyak kelebihan Dan tekad yang bahkn melampaui aku.
           <br>
           Aku yakin dan percaya dengan tekad dan kelebihan yg kamu punya,
@@ -511,8 +575,10 @@ pria yang dulu bilang gk mungkin suka sama kamu dunia emang aneh ya</p>
           Karena Tekad itu tidak pernah hilang menyatu dengan sifat asli manusia.
         </p>
 
-        <p><b>
-         Mungkin udah saatnya AKu akhiri ini yaa.. bukan berarti ada sesuatu dibaliknya.</b>
+        <p>
+          <b>
+            Mungkin udah saatnya AKu akhiri ini yaa.. bukan berarti ada sesuatu dibaliknya.
+          </b>
         </p>
 
         <p>
@@ -523,8 +589,9 @@ pria yang dulu bilang gk mungkin suka sama kamu dunia emang aneh ya</p>
         <h2 class="dedication-heading">
           Selamat Melangkah Rina...
         </h2>
-<p>
-          Terimakasih🙏,  </p>
+
+        <p>Terimakasih🙏,</p>
+
         <p>
           Dengan seluruh doa dan rasa bangga yang tetap tinggal, semoga
           langkahmu selalu menemukan arah, hatimu tetap mengenali kebaikan,
@@ -1199,4 +1266,4 @@ pria yang dulu bilang gk mungkin suka sama kamu dunia emang aneh ya</p>
   </script>
 
 </body>
-  </html>
+</html>
