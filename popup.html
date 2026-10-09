@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Helpdesk Popup - Classic .NET</title>
+<style>
+:root{
+  --face:#ECE9D8; --blue:#245EDC; --navy:#1F4E9A; --red:#C8201E; --edge:#0A246A;
+  --field:#7F9DB9; --text:#000;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:11px/1.4 Tahoma,"Segoe UI",Verdana,sans-serif;color:var(--text);
+  background:#3A6EA5 linear-gradient(160deg,#5A8FD4 0%,#3A6EA5 55%,#2B558A 100%);}
+.demo{position:fixed;left:12px;bottom:12px}
+
+.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,40,.35);padding:12px;z-index:10}
+.overlay.on{display:flex}
+.overlay.top{z-index:20}
+
+.win{background:var(--face);border:1px solid var(--edge);border-top:0;border-radius:8px 8px 0 0;
+  box-shadow:3px 4px 12px rgba(0,0,0,.55);width:100%;max-width:420px;position:relative}
+.win.wide{max-width:440px}
+.title{height:28px;display:flex;align-items:center;gap:6px;padding:0 4px 0 7px;cursor:move;user-select:none;
+  border-radius:7px 7px 0 0;color:#fff;font-weight:bold;font-size:12px;text-shadow:1px 1px #0F1089;
+  background:linear-gradient(#0997FF 0,#0053EE 8%,#0050EE 40%,#0066FF 88%,#0066FF 93%,#005BFF 95%,#003DD7 96%,#003DD7 100%)}
+.title img{width:16px;height:16px;object-fit:contain}
+.title span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x{width:21px;height:21px;border:1px solid #fff;border-radius:3px;color:#fff;font:bold 12px/17px Tahoma,sans-serif;
+  text-align:center;padding:0;cursor:pointer;text-shadow:none;
+  background:radial-gradient(circle at 30% 25%,#F4A58B,#D8553A 60%,#B7351C)}
+.x:hover{filter:brightness(1.12)}
+.body{padding:14px 14px 12px}
+
+.msg{display:flex;gap:14px;align-items:flex-start}
+.msg img.ico{width:72px;height:72px;object-fit:contain;flex:none;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.35))}
+.msg h2{margin:2px 0 6px;font-size:13px;color:var(--navy)}
+.msg p{margin:0 0 6px}
+.sico{width:32px;height:32px;flex:none}
+.hr{border:0;border-top:1px solid #fff;border-bottom:1px solid #ACA899;margin:12px 0}
+.btns{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+
+.btn{min-width:84px;height:25px;padding:0 12px;font:11px Tahoma,"Segoe UI",sans-serif;color:#000;cursor:pointer;
+  border:1px solid #003C74;border-radius:3px;
+  background:linear-gradient(#fff,#ECEBE5 86%,#D8D0C4)}
+.btn:hover{box-shadow:inset 0 0 0 2px #F8B330}
+.btn:active{background:linear-gradient(#CDCAC3,#E3E3DB 15%,#E5E5DE)}
+.btn.def{box-shadow:inset 0 0 0 2px #7BA0F5}
+.btn.def:hover{box-shadow:inset 0 0 0 2px #F8B330}
+.btn:focus-visible,.x:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:1px dotted #000;outline-offset:-4px}
+
+fieldset{border:1px solid #D0D0BF;border-radius:4px;margin:0;padding:8px 10px 10px;background:#F5F4EA}
+legend{color:#0046D5;padding:0 4px}
+.row{display:grid;grid-template-columns:104px 1fr;gap:6px;align-items:center;margin:6px 0}
+.row.top{align-items:start}
+.row label{white-space:nowrap}
+input,select,textarea{width:100%;font:11px Tahoma,"Segoe UI",sans-serif;border:1px solid var(--field);
+  border-radius:0;background:#fff;padding:3px 4px;height:23px;color:#000}
+textarea{height:78px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:#316AC5}
+.hint{grid-column:2;color:#555;font-size:10px;margin-top:-2px}
+@media (max-width:420px){.row{grid-template-columns:1fr}.hint{grid-column:1}.msg img.ico{width:52px;height:52px}}
+</style>
+</head>
+<body>
+
+<button class="btn demo" id="reopen" type="button">Simulasi server error</button>
+
+<!-- Popup 1: server tidak tersambung -->
+<div class="overlay" id="dlgError" role="dialog" aria-modal="true" aria-labelledby="errTitle">
+  <div class="win">
+    <div class="title"><img src="helpdesk.png" alt=""><span id="errTitle">Koneksi Server</span>
+      <button class="x" data-close aria-label="Tutup">X</button></div>
+    <div class="body">
+      <div class="msg">
+        <img class="ico" src="helpdesk.png" alt="Helpdesk">
+        <div>
+          <h2>Server tidak dapat tersambung</h2>
+          <p>Aplikasi gagal terhubung ke server. Silakan hubungi Helpdesk, atau lihat status layanan di halaman informasi.</p>
+        </div>
+      </div>
+      <hr class="hr">
+      <div class="btns">
+        <button class="btn def" id="btnHelp" type="button">Hubungi Helpdesk</button>
+        <button class="btn" id="btnInfo" type="button">Kunjungi halaman statis</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Popup 2: form helpdesk -->
+<div class="overlay" id="dlgForm" role="dialog" aria-modal="true" aria-labelledby="frmTitle">
+  <div class="win wide">
+    <div class="title"><img src="helpdesk.png" alt=""><span id="frmTitle">Hubungi Helpdesk</span>
+      <button class="x" data-close aria-label="Tutup">X</button></div>
+    <div class="body">
+      <fieldset>
+        <legend>Data Merchant</legend>
+        <div class="row"><label for="fMid">Merchant ID:</label>
+          <input id="fMid" inputmode="numeric" maxlength="12" autocomplete="off"></div>
+        <div class="row"><label for="fEmail">Email:</label>
+          <input id="fEmail" type="email" autocomplete="email"></div>
+        <div class="row top"><label for="fDesc">Deskripsi problem:</label>
+          <textarea id="fDesc"></textarea></div>
+        <div class="row"><label for="fSla">SLA Level:</label>
+          <select id="fSla"></select></div>
+        <div class="hint" id="slaHint"></div>
+      </fieldset>
+      <hr class="hr">
+      <div class="btns">
+        <button class="btn def" id="btnSend" type="button">Kirim</button>
+        <button class="btn" id="btnCancel" type="button">Batal</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MessageBox -->
+<div class="overlay top" id="dlgMsg" role="alertdialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="win">
+    <div class="title"><span id="mTitle"></span><button class="x" data-mclose aria-label="Tutup">X</button></div>
+    <div class="body">
+      <div class="msg"><div id="mIcon"></div><p id="mText" style="margin-top:6px"></p></div>
+      <hr class="hr">
+      <div class="btns"><button class="btn def" id="mOk" type="button">OK</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ====== KONFIGURASI ====== */
+const CONFIG = {
+  infoUrl: "info.html",                 // web statis
+  mailTo: "cs@arinex.my.id",            // tujuan (hanya simulasi, tidak ada email asli terkirim)
+  simulateDelay: 900,                   // lama "mengirim" dalam ms
+  // Data merchant dummy ("victim") untuk validasi
+  merchants: { "000101": "victim@arinex.my.id" }
+};
+const SLA = {
+  "Critical": "maksimal 1 jam",
+  "High":     "maksimal 4 jam",
+  "Medium":   "maksimal 1 x 24 jam",
+  "Low":      "maksimal 3 x 24 jam"
+};
+
+const $ = id => document.getElementById(id);
+const show = (el, on) => el.classList.toggle("on", on);
+
+/* ====== MessageBox ala WinForms ====== */
+const ICONS = {
+  error:'<svg class="sico" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#C8201E" stroke="#fff" stroke-width="2"/><path d="M10 10l12 12M22 10L10 22" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>',
+  info:'<svg class="sico" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#245EDC" stroke="#fff" stroke-width="2"/><path d="M9 16.5l5 5 9-10" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  warn:'<svg class="sico" viewBox="0 0 32 32"><path d="M16 3L30 28H2z" fill="#F7C922" stroke="#8A6D00" stroke-width="2" stroke-linejoin="round"/><path d="M16 12v8" stroke="#000" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="24" r="1.8"/></svg>'
+};
+let msgDone = null;
+function msgBox(title, text, type, done){
+  $("mTitle").textContent = title;
+  $("mText").textContent = text;
+  $("mIcon").innerHTML = ICONS[type];
+  msgDone = done || null;
+  show($("dlgMsg"), true);
+  $("mOk").focus();
+}
+function closeMsg(){ show($("dlgMsg"), false); if(msgDone){ const f=msgDone; msgDone=null; f(); } }
+$("mOk").onclick = closeMsg;
+document.querySelector("[data-mclose]").onclick = closeMsg;
+
+/* ====== Popup 1 & 2 ====== */
+window.showServerError = () => { show($("dlgForm"), false); show($("dlgError"), true); $("btnHelp").focus(); };
+$("reopen").onclick = showServerError;
+$("btnInfo").onclick = () => { location.href = CONFIG.infoUrl; };
+$("btnHelp").onclick = () => { show($("dlgError"), false); show($("dlgForm"), true); $("fMid").focus(); };
+$("btnCancel").onclick = () => show($("dlgForm"), false);
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => b.closest(".overlay").classList.remove("on"));
+document.addEventListener("keydown", e => {
+  if(e.key !== "Escape") return;
+  if($("dlgMsg").classList.contains("on")) closeMsg();
+  else if($("dlgForm").classList.contains("on")) show($("dlgForm"), false);
+});
+
+/* SLA dropdown */
+Object.keys(SLA).forEach(k => $("fSla").add(new Option(k, k)));
+$("fSla").value = "Medium";
+const upd = () => $("slaHint").textContent = "Target tindak lanjut: " + SLA[$("fSla").value];
+$("fSla").onchange = upd; upd();
+
+/* ====== Submit ====== */
+let busy = false;
+$("btnSend").onclick = async () => {
+  if(busy) return;
+  const mid = $("fMid").value.trim();
+  const email = $("fEmail").value.trim();
+  const desc = $("fDesc").value.trim();
+  const sla = $("fSla").value;
+
+  if(!mid || !email || !desc){
+    return msgBox("Data belum lengkap", "Merchant ID, Email, dan Deskripsi problem wajib diisi.", "warn");
+  }
+  const reg = CONFIG.merchants[mid];
+  if(!reg || reg.toLowerCase() !== email.toLowerCase()){
+    return msgBox("Validasi gagal", "Merchant ID atau Email tidak sesuai.", "error");
+  }
+
+  busy = true; $("btnSend").textContent = "Mengirim...";
+  try{
+    // SIMULASI: tidak ada request ke server, hanya jeda lalu dianggap berhasil
+    await new Promise(r => setTimeout(r, CONFIG.simulateDelay));
+    console.log("[SIMULASI] Email ke " + CONFIG.mailTo, { merchant_id: mid, email, description: desc, sla });
+    show($("dlgForm"), false);
+    $("fDesc").value = "";
+    msgBox("Pesan terkirim",
+      "Pesan Anda telah terkirim ke tim Helpdesk dan akan segera ditindaklanjuti (SLA " + sla + ": " + SLA[sla] + ").",
+      "info");
+  }catch(err){
+    msgBox("Pengiriman gagal", "Pesan belum terkirim. Periksa koneksi lalu klik Kirim lagi.", "error");
+  }finally{
+    busy = false; $("btnSend").textContent = "Kirim";
+  }
+};
+
+/* ====== Dialog bisa digeser lewat title bar ====== */
+document.querySelectorAll(".title").forEach(t => {
+  const w = t.parentElement; let sx, sy, ox, oy, drag = false;
+  t.addEventListener("pointerdown", e => {
+    if(e.target.closest(".x")) return;
+    drag = true; sx = e.clientX; sy = e.clientY;
+    const m = new DOMMatrix(getComputedStyle(w).transform); ox = m.m41; oy = m.m42;
+    t.setPointerCapture(e.pointerId);
+  });
+  t.addEventListener("pointermove", e => { if(drag) w.style.transform = `translate(${ox+e.clientX-sx}px,${oy+e.clientY-sy}px)`; });
+  t.addEventListener("pointerup", () => drag = false);
+});
+
+showServerError();
+</script>
+</body>
+</html>
