@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -38,6 +38,7 @@ body{font:11px/1.4 Tahoma,"Segoe UI",Verdana,sans-serif;color:var(--text);
 .msg img.ico{width:72px;height:72px;object-fit:contain;flex:none;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.35))}
 .msg h2{margin:2px 0 6px;font-size:13px;color:var(--navy)}
 .msg p{margin:0 0 6px}
+.msg p.sub{color:#444}
 .sico{width:32px;height:32px;flex:none}
 .hr{border:0;border-top:1px solid #fff;border-bottom:1px solid #ACA899;margin:12px 0}
 .btns{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
@@ -66,25 +67,27 @@ input:focus,select:focus,textarea:focus{border-color:#316AC5}
 </head>
 <body>
 
-<button class="btn demo" id="reopen" type="button">Simulasi server error</button>
+<button class="btn demo" id="reopen" type="button">Simulate server error</button>
 
 <!-- Popup 1: server tidak tersambung -->
 <div class="overlay" id="dlgError" role="dialog" aria-modal="true" aria-labelledby="errTitle">
   <div class="win">
-    <div class="title"><img src="helpdesk.png" alt=""><span id="errTitle">Koneksi Server</span>
-      <button class="x" data-close aria-label="Tutup">X</button></div>
+    <div class="title"><img src="helpdesk.png" alt=""><span id="errTitle">ARINEX SYSTEM ERROR</span>
+      <button class="x" data-close aria-label="Close">X</button></div>
     <div class="body">
       <div class="msg">
         <img class="ico" src="helpdesk.png" alt="Helpdesk">
         <div>
-          <h2>Server tidak dapat tersambung</h2>
-          <p>Aplikasi gagal terhubung ke server. Silakan hubungi Helpdesk, atau lihat status layanan di halaman informasi.</p>
+          <h2>Server Host Not Found</h2>
+          <p>The connection to the Arinex server has been interrupted or the host is currently unavailable.</p>
+          <p class="sub">Error Code: ARX-ERR-002</p>
+          <p class="sub">Please contact the Arinex Helpdesk for assistance.</p>
         </div>
       </div>
       <hr class="hr">
       <div class="btns">
-        <button class="btn def" id="btnHelp" type="button">Hubungi Helpdesk</button>
-        <button class="btn" id="btnInfo" type="button">Kunjungi halaman statis</button>
+        <button class="btn def" id="btnHelp" type="button">Contact Helpdesk</button>
+        <button class="btn" id="btnInfo" type="button">Visit Info Page</button>
       </div>
     </div>
   </div>
@@ -93,16 +96,16 @@ input:focus,select:focus,textarea:focus{border-color:#316AC5}
 <!-- Popup 2: form helpdesk -->
 <div class="overlay" id="dlgForm" role="dialog" aria-modal="true" aria-labelledby="frmTitle">
   <div class="win wide">
-    <div class="title"><img src="helpdesk.png" alt=""><span id="frmTitle">Hubungi Helpdesk</span>
-      <button class="x" data-close aria-label="Tutup">X</button></div>
+    <div class="title"><img src="helpdesk.png" alt=""><span id="frmTitle">Contact Helpdesk</span>
+      <button class="x" data-close aria-label="Close">X</button></div>
     <div class="body">
       <fieldset>
-        <legend>Data Merchant</legend>
+        <legend>Merchant Details</legend>
         <div class="row"><label for="fMid">Merchant ID:</label>
           <input id="fMid" inputmode="numeric" maxlength="12" autocomplete="off"></div>
         <div class="row"><label for="fEmail">Email:</label>
           <input id="fEmail" type="email" autocomplete="email"></div>
-        <div class="row top"><label for="fDesc">Deskripsi problem:</label>
+        <div class="row top"><label for="fDesc">Problem description:</label>
           <textarea id="fDesc"></textarea></div>
         <div class="row"><label for="fSla">SLA Level:</label>
           <select id="fSla"></select></div>
@@ -110,8 +113,8 @@ input:focus,select:focus,textarea:focus{border-color:#316AC5}
       </fieldset>
       <hr class="hr">
       <div class="btns">
-        <button class="btn def" id="btnSend" type="button">Kirim</button>
-        <button class="btn" id="btnCancel" type="button">Batal</button>
+        <button class="btn def" id="btnSend" type="button">Send</button>
+        <button class="btn" id="btnCancel" type="button">Cancel</button>
       </div>
     </div>
   </div>
@@ -120,7 +123,7 @@ input:focus,select:focus,textarea:focus{border-color:#316AC5}
 <!-- MessageBox -->
 <div class="overlay top" id="dlgMsg" role="alertdialog" aria-modal="true" aria-labelledby="mTitle">
   <div class="win">
-    <div class="title"><span id="mTitle"></span><button class="x" data-mclose aria-label="Tutup">X</button></div>
+    <div class="title"><span id="mTitle"></span><button class="x" data-mclose aria-label="Close">X</button></div>
     <div class="body">
       <div class="msg"><div id="mIcon"></div><p id="mText" style="margin-top:6px"></p></div>
       <hr class="hr">
@@ -132,17 +135,17 @@ input:focus,select:focus,textarea:focus{border-color:#316AC5}
 <script>
 /* ====== KONFIGURASI ====== */
 const CONFIG = {
-  infoUrl: "info.html",                 // web statis
-  mailTo: "cs@arinex.my.id",            // tujuan (hanya simulasi, tidak ada email asli terkirim)
-  simulateDelay: 900,                   // lama "mengirim" dalam ms
+  infoUrl: "info.html",                 // static web page
+  mailTo: "cs@arinex.my.id",            // tujuan (simulation only, no real email is sent)
+  simulateDelay: 900,                   // "sending" delay in ms
   // Data merchant dummy ("victim") untuk validasi
   merchants: { "000101": "victim@arinex.my.id" }
 };
 const SLA = {
-  "Critical": "maksimal 1 jam",
-  "High":     "maksimal 4 jam",
-  "Medium":   "maksimal 1 x 24 jam",
-  "Low":      "maksimal 3 x 24 jam"
+  "Critical": "within 1 hour",
+  "High":     "within 4 hours",
+  "Medium":   "within 24 hours",
+  "Low":      "within 3 days"
 };
 
 const $ = id => document.getElementById(id);
@@ -183,7 +186,7 @@ document.addEventListener("keydown", e => {
 /* SLA dropdown */
 Object.keys(SLA).forEach(k => $("fSla").add(new Option(k, k)));
 $("fSla").value = "Medium";
-const upd = () => $("slaHint").textContent = "Target tindak lanjut: " + SLA[$("fSla").value];
+const upd = () => $("slaHint").textContent = "Follow-up target: " + SLA[$("fSla").value];
 $("fSla").onchange = upd; upd();
 
 /* ====== Submit ====== */
@@ -196,27 +199,27 @@ $("btnSend").onclick = async () => {
   const sla = $("fSla").value;
 
   if(!mid || !email || !desc){
-    return msgBox("Data belum lengkap", "Merchant ID, Email, dan Deskripsi problem wajib diisi.", "warn");
+    return msgBox("Incomplete data", "Merchant ID, Email, and Problem description are required.", "warn");
   }
   const reg = CONFIG.merchants[mid];
   if(!reg || reg.toLowerCase() !== email.toLowerCase()){
-    return msgBox("Validasi gagal", "Merchant ID atau Email tidak sesuai.", "error");
+    return msgBox("Validation failed", "Merchant ID or Email does not match.", "error");
   }
 
-  busy = true; $("btnSend").textContent = "Mengirim...";
+  busy = true; $("btnSend").textContent = "Sending...";
   try{
-    // SIMULASI: tidak ada request ke server, hanya jeda lalu dianggap berhasil
+    // SIMULATION: no server request, just a delay then treated as success
     await new Promise(r => setTimeout(r, CONFIG.simulateDelay));
-    console.log("[SIMULASI] Email ke " + CONFIG.mailTo, { merchant_id: mid, email, description: desc, sla });
+    console.log("[SIMULATION] Email ke " + CONFIG.mailTo, { merchant_id: mid, email, description: desc, sla });
     show($("dlgForm"), false);
     $("fDesc").value = "";
-    msgBox("Pesan terkirim",
-      "Pesan Anda telah terkirim ke tim Helpdesk dan akan segera ditindaklanjuti (SLA " + sla + ": " + SLA[sla] + ").",
+    msgBox("Message sent",
+      "Your message has been sent to the Arinex Helpdesk and will be followed up soon (SLA " + sla + ": " + SLA[sla] + ").",
       "info");
   }catch(err){
-    msgBox("Pengiriman gagal", "Pesan belum terkirim. Periksa koneksi lalu klik Kirim lagi.", "error");
+    msgBox("Sending failed", "Your message was not sent. Check your connection and click Send again.", "error");
   }finally{
-    busy = false; $("btnSend").textContent = "Kirim";
+    busy = false; $("btnSend").textContent = "Send";
   }
 };
 
