@@ -4,323 +4,1195 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#ed1c24">
+
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="img/icon-192.png">
   <link rel="apple-touch-icon" href="img/icon-192.png">
+
   <title>Tentang Aplikasi — Secret Message</title>
 
-  <!-- Variabel warna, sudut pixel, dan tema gelap dipakai bersama dengan aplikasi utama -->
   <link rel="stylesheet" href="css/style.css?v=5.0">
   <link rel="stylesheet" href="css/extra.css?v=5.0">
 
   <script>
-    try { document.documentElement.setAttribute("data-theme", localStorage.getItem("arinex_theme") === "dark" ? "dark" : "light"); }
-    catch (e) { document.documentElement.setAttribute("data-theme", "light"); }
+    try {
+      document.documentElement.setAttribute(
+        "data-theme",
+        localStorage.getItem("arinex_theme") === "dark" ? "dark" : "light"
+      );
+    } catch (e) {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
   </script>
 
   <style>
-    /* Tidak bisa dipilih / disalin / diseret */
-    * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-    img { -webkit-user-drag: none; pointer-events: none; image-rendering: auto; }
+    /* =====================================================
+       PENGATURAN DASAR
+    ===================================================== */
 
-    body { display: flex; flex-direction: column; }
+    * {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
 
-    .top { display: flex; align-items: center; gap: 12px; flex-shrink: 0; z-index: 10;
-      padding: calc(10px + env(safe-area-inset-top)) 14px 10px; background: var(--bg-header); color: var(--text-header); }
-    .back { width: 40px; height: 40px; border: 0; background: none; color: #fff; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; clip-path: var(--alias-circle); }
-    .back:active { background: rgba(255,255,255,.2); }
-    .back svg { width: 26px; height: 26px; }
-    .brand { width: 40px; height: 40px; clip-path: var(--alias-10); }
-    .top div { display: flex; flex-direction: column; min-width: 0; }
-    .top strong { font-size: 17px; font-weight: 600; }
-    .top span { font-size: 12.5px; opacity: .85; }
+    img {
+      -webkit-user-drag: none;
+      pointer-events: none;
+      image-rendering: auto;
+    }
 
-    .page { flex: 1; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
-      padding: 16px 16px calc(24px + env(safe-area-inset-bottom)); }
-    .wrap { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
 
-    .card { background: var(--bg-panel); padding: 22px 20px; clip-path: var(--alias-16); }
-    .card h2 { font-size: 18px; margin-bottom: 10px; }
-    .card p { color: var(--text-sub); line-height: 1.7; font-size: 15px; }
-    .card p + p { margin-top: 12px; }
+    /* =====================================================
+       HEADER
+    ===================================================== */
 
-    /* Pemutar */
-    .now { display: flex; align-items: center; gap: 14px; }
-    .cover { width: 64px; height: 64px; flex-shrink: 0; clip-path: var(--alias-10); }
-    .meta { display: flex; flex-direction: column; min-width: 0; }
-    .meta strong { font-size: 17px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .meta span { font-size: 13px; color: var(--text-sub); }
+    .top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      z-index: 10;
 
-    .seek { position: relative; height: 6px; margin: 20px 0 8px; background: var(--bg-input); touch-action: none; cursor: pointer; }
-    .seek::after { content: ""; position: absolute; inset: -14px 0; }
-    .fill { height: 100%; width: 0; background: var(--accent); pointer-events: none; }
-    .times { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+      padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
 
-    .ctrl { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 12px; }
-    .cbtn { width: 48px; height: 48px; border: 0; background: none; color: var(--text-main); cursor: pointer;
-      display: flex; align-items: center; justify-content: center; clip-path: var(--alias-circle); }
-    .cbtn:active { background: var(--bg-input); }
-    .cbtn svg { width: 26px; height: 26px; }
-    .cbtn.big { width: 64px; height: 64px; background: var(--accent); color: #fff; }
-    .cbtn.big:active { background: var(--accent-hover); }
-    .cbtn.big svg { width: 32px; height: 32px; }
-    .cbtn.on { color: var(--accent); }
-    .note { min-height: 18px; margin-top: 10px; font-size: 12px; text-align: center; color: var(--text-sub); }
+      background: var(--bg-header);
+      color: var(--text-header);
+    }
 
-    .row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; padding: 10px 6px;
-      background: none; border: 0; border-bottom: 1px solid var(--border); color: var(--text-main); text-align: left; cursor: pointer; }
-    .row:last-child { border-bottom: 0; }
-    .row .n { width: 22px; text-align: center; font-size: 13px; color: var(--text-sub); }
-    .row .t { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-    .row strong { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .row span { font-size: 12px; color: var(--text-sub); }
-    .row.on strong, .row.on .n { color: var(--accent); }
-    .eq { display: inline-flex; gap: 2px; align-items: flex-end; height: 14px; }
-    .eq b { width: 3px; background: var(--accent); animation: eq .9s infinite ease-in-out; }
-    .eq b:nth-child(2) { animation-delay: .2s; } .eq b:nth-child(3) { animation-delay: .4s; }
-    @keyframes eq { 0%, 100% { height: 4px; } 50% { height: 14px; } }
+    .back {
+      width: 40px;
+      height: 40px;
 
-    .primary { width: 100%; max-width: 520px; margin: 0 auto; padding: 14px 16px; min-height: 48px; }
+      border: 0;
+      background: none;
+      color: #fff;
+      cursor: pointer;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      clip-path: var(--alias-circle);
+    }
+
+    .back:active {
+      background: rgba(255, 255, 255, .2);
+    }
+
+    .back svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    .brand {
+      width: 40px;
+      height: 40px;
+      clip-path: var(--alias-10);
+    }
+
+    .top div {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .top strong {
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .top span {
+      font-size: 12.5px;
+      opacity: .85;
+    }
+
+    /* =====================================================
+       AREA KONTEN
+    ===================================================== */
+
+    .page {
+      flex: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+
+      padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
+    }
+
+    .wrap {
+      max-width: 520px;
+      margin: 0 auto;
+
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--bg-panel);
+      padding: 22px 20px;
+      clip-path: var(--alias-16);
+    }
+
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .card p {
+      color: var(--text-sub);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .card p + p {
+      margin-top: 12px;
+    }
+
+    /* =====================================================
+       TEKS DEDIKASI
+       Perubahan hanya berlaku pada kartu dedikasi.
+    ===================================================== */
+
+    .dedication {
+      padding: 24px 20px;
+    }
+
+    .dedication .dedication-divider {
+      margin: 0 0 22px;
+
+      color: var(--text-sub);
+      font-size: 12px;
+      line-height: 1;
+      letter-spacing: 4px;
+      text-align: center;
+
+      opacity: .8;
+    }
+
+    .dedication .dedication-divider:last-child {
+      margin: 24px 0 0;
+    }
+
+    .dedication p {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.85;
+      text-align: left;
+      overflow-wrap: break-word;
+    }
+
+    .dedication p + p {
+      margin-top: 18px;
+    }
+
+    .dedication .dedication-heading {
+      margin: 28px 0 14px;
+
+      color: var(--text-main);
+      font-size: 19px;
+      line-height: 1.5;
+      font-weight: 600;
+      letter-spacing: .1px;
+    }
+
+    /* =====================================================
+       PEMUTAR MUSIK
+    ===================================================== */
+
+    .now {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .cover {
+      width: 64px;
+      height: 64px;
+      flex-shrink: 0;
+      clip-path: var(--alias-10);
+    }
+
+    .meta {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .meta strong {
+      font-size: 17px;
+      font-weight: 600;
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .meta span {
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    .seek {
+      position: relative;
+      height: 6px;
+      margin: 20px 0 8px;
+
+      background: var(--bg-input);
+      touch-action: none;
+      cursor: pointer;
+    }
+
+    .seek::after {
+      content: "";
+      position: absolute;
+      inset: -14px 0;
+    }
+
+    .fill {
+      height: 100%;
+      width: 0;
+      background: var(--accent);
+      pointer-events: none;
+    }
+
+    .times {
+      display: flex;
+      justify-content: space-between;
+
+      font-size: 12px;
+      color: var(--text-sub);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ctrl {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .cbtn {
+      width: 48px;
+      height: 48px;
+
+      border: 0;
+      background: none;
+      color: var(--text-main);
+      cursor: pointer;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      clip-path: var(--alias-circle);
+    }
+
+    .cbtn:active {
+      background: var(--bg-input);
+    }
+
+    .cbtn svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    .cbtn.big {
+      width: 64px;
+      height: 64px;
+
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .cbtn.big:active {
+      background: var(--accent-hover);
+    }
+
+    .cbtn.big svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .cbtn.on {
+      color: var(--accent);
+    }
+
+    .note {
+      min-height: 18px;
+      margin-top: 10px;
+
+      font-size: 12px;
+      text-align: center;
+      color: var(--text-sub);
+    }
+
+    /* =====================================================
+       DAFTAR PUTAR
+    ===================================================== */
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      width: 100%;
+      min-height: 58px;
+      padding: 10px 6px;
+
+      background: none;
+      border: 0;
+      border-bottom: 1px solid var(--border);
+
+      color: var(--text-main);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .row:last-child {
+      border-bottom: 0;
+    }
+
+    .row .n {
+      width: 22px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    .row .t {
+      display: flex;
+      flex-direction: column;
+
+      min-width: 0;
+      flex: 1;
+    }
+
+    .row strong {
+      font-size: 15px;
+      font-weight: 600;
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .row span {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .row.on strong,
+    .row.on .n {
+      color: var(--accent);
+    }
+
+    .eq {
+      display: inline-flex;
+      gap: 2px;
+      align-items: flex-end;
+      height: 14px;
+    }
+
+    .eq b {
+      width: 3px;
+      background: var(--accent);
+      animation: eq .9s infinite ease-in-out;
+    }
+
+    .eq b:nth-child(2) {
+      animation-delay: .2s;
+    }
+
+    .eq b:nth-child(3) {
+      animation-delay: .4s;
+    }
+
+    @keyframes eq {
+      0%,
+      100% {
+        height: 4px;
+      }
+
+      50% {
+        height: 14px;
+      }
+    }
+
+    /* =====================================================
+       TOMBOL KEMBALI
+    ===================================================== */
+
+    .primary {
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 14px 16px;
+      min-height: 48px;
+    }
   </style>
 </head>
 
 <body>
 
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
   <header class="top">
-    <button class="back" type="button" aria-label="Kembali" onclick="location.href='index.html'">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    <button
+      class="back"
+      type="button"
+      aria-label="Kembali"
+      onclick="location.href='index.html'"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M15 5l-7 7 7 7"/>
+      </svg>
     </button>
+
     <img class="brand" src="img/icon-192.png" alt="">
+
     <div>
       <strong>Tentang aplikasi</strong>
       <span>Secret Message</span>
     </div>
   </header>
 
+  <!-- =====================================================
+       KONTEN UTAMA
+  ====================================================== -->
+
   <main class="page">
     <div class="wrap">
 
-      <section class="card">
-        ----
-        <p>Kadang kadang tidak semua yang berakhir itu harus d kenang sebagai kepedihan.<br>
-Sebagian dari itu layak dikenang sebagai kehormatan.<br><br>
-Terimakasih,<br><br>
-Aku bangga padamu.<br>
-Aku tau kamu punya banyak kelebihan Dan tekad yang melampaui ku<br>
-Aku yakin dan percaya dengan tekad dan kelebihan yg kamu punya, kamu akan berakhir baik. <br>
-Tekad itu tidak pernah hilang karena menyatu dengan sifat asli manusia.<br><br>
-Ku akhiri ini yaa.. bukan berarti ada sesuatu dibaliknya.<br><br>
-Aku membiarkanmu fokus sama jalanmu sendiri tanpa terbelenggu masalalu.<br><br>
-<h2>Selamat Melangkah yaa...</h2>
-Dengan seluruh doa dan rasa bangga yang tetap tinggal, semoga langkahmu selalu menemukan arah, hatimu tetap mengenali kebaikan, dan segala hal yang sedang kamu
-perjuangkan menemukan jalannya untuk tumbuh. <br>
-Banyak sekali doa menyertaimu dari hati yg tulus yg gk bisa ku tulis semuanya disini. <br><br>
+      <!-- =================================================
+           DEDIKASI
+      ================================================== -->
 
-Tidak ada yang perlu disangkal dari apa yang pernah ada.<br>
-Tidak ada kehormatan yang harus direndahkan hanya karena sebuah perjalanan telah sampai pada akhirnya.<br><br>
+      <section class="card dedication">
 
-Ohh yaa...Kamu pernah bertanya hal yg menggelitik soal aku sudah punya cewe atau belum?<br> Jawabannya aku sedang fokus sama diri sendiri😅, merasa kondisiku saat ini dan pengalamanku yang sebelumnya, aku belum punya niat kesana, biarlah itu terjadi kalo mental, fikiran, sikap dan kondisi materi yg sudah mulai kuperbaiki dari minus sudah mantap.<br> 
-Karena aku gk mau suatu saat aku mengulangi kesalahan yang sama🙏.<br><br>
+        <p class="dedication-divider">— — —</p>
 
-Sekali lagi aku ucap Terima kasih atas bagian yang pernah kita jalani.<br>
-Selebihnya, biarlah waktu membawa masing-masing dari kita menuju kehidupan yang seharusnya.<br><br>
+        <p>
+          Kadang kadang tidak semua yang berakhir itu harus d kenang
+          sebagai kepedihan.
+          <br>
+          Sebagian dari itu layak dikenang sebagai kehormatan.
+        </p>
 
-Salam hangat, salam hormat untuk mu dan semuanya.<br><br>
-Semoga lekas sembuh, selalu bahagia dan tetap semangat💪😁💙.</p>
+        <p>
+          Terimakasih,
+        </p>
 
+        <p>
+          Aku bangga padamu.
+          <br>
+          Aku tau kamu punya banyak kelebihan Dan tekad yang melampaui ku.
+          <br>
+          Aku yakin dan percaya dengan tekad dan kelebihan yg kamu punya,
+          kamu akan berakhir baik.
+          <br>
+          Tekad itu tidak pernah hilang karena menyatu dengan sifat asli manusia.
+        </p>
 
+        <p>
+          Ku akhiri ini yaa.. bukan berarti ada sesuatu dibaliknya.
+        </p>
 
+        <p>
+          Aku membiarkanmu fokus sama jalanmu sendiri tanpa terbelenggu masalalu.
+        </p>
 
+        <h2 class="dedication-heading">
+          Selamat Melangkah yaa...
+        </h2>
 
-        ----
+        <p>
+          Dengan seluruh doa dan rasa bangga yang tetap tinggal, semoga
+          langkahmu selalu menemukan arah, hatimu tetap mengenali kebaikan,
+          dan segala hal yang sedang kamu perjuangkan menemukan jalannya
+          untuk tumbuh.
+        </p>
+
+        <p>
+          Banyak sekali doa menyertaimu dari hati yg tulus yg gk bisa ku
+          tulis semuanya disini.
+        </p>
+
+        <p>
+          Tidak ada yang perlu disangkal dari apa yang pernah ada.
+          <br>
+          Tidak ada kehormatan yang harus direndahkan hanya karena sebuah
+          perjalanan telah sampai pada akhirnya.
+        </p>
+
+        <p>
+          Ohh yaa...Kamu pernah bertanya hal yg menggelitik soal aku sudah
+          punya cewe atau belum?
+          <br>
+          Jawabannya aku sedang fokus sama diri sendiri😅, merasa kondisiku
+          saat ini dan pengalamanku yang sebelumnya, aku belum punya niat
+          kesana, biarlah itu terjadi kalo mental, fikiran, sikap dan kondisi
+          materi yg sudah mulai kuperbaiki dari minus sudah mantap.
+        </p>
+
+        <p>
+          Karena aku gk mau suatu saat aku mengulangi kesalahan yang sama🙏.
+        </p>
+
+        <p>
+          Sekali lagi aku ucap Terima kasih atas bagian yang pernah kita jalani.
+          <br>
+          Selebihnya, biarlah waktu membawa masing-masing dari kita menuju
+          kehidupan yang seharusnya.
+        </p>
+
+        <p>
+          Salam hangat, salam hormat untuk mu dan semuanya.
+        </p>
+
+        <p>
+          Semoga lekas sembuh, selalu bahagia dan tetap semangat💪😁💙.
+        </p>
+
+        <p class="dedication-divider">— — —</p>
+
       </section>
 
+      <!-- =================================================
+           PEMUTAR MUSIK
+      ================================================== -->
+
       <section class="card" aria-label="Pemutar musik">
+
         <div class="now">
           <img class="cover" src="img/icon-192.png" alt="">
+
           <div class="meta">
             <strong id="tTitle">Pilih lagu</strong>
             <span id="tArtist">Secret Message</span>
           </div>
         </div>
 
-        <div class="seek" id="seek" role="slider" aria-label="Posisi lagu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fill"></div></div>
-        <div class="times"><span id="tCur">0:00</span><span id="tDur">0:00</span></div>
+        <div
+          class="seek"
+          id="seek"
+          role="slider"
+          aria-label="Posisi lagu"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+        >
+          <div class="fill" id="fill"></div>
+        </div>
+
+        <div class="times">
+          <span id="tCur">0:00</span>
+          <span id="tDur">0:00</span>
+        </div>
 
         <div class="ctrl">
-          <button class="cbtn" id="bRepeat" type="button" aria-label="Ulangi semua"></button>
-          <button class="cbtn" id="bPrev" type="button" aria-label="Lagu sebelumnya"></button>
-          <button class="cbtn big" id="bPlay" type="button" aria-label="Putar"></button>
-          <button class="cbtn" id="bNext" type="button" aria-label="Lagu berikutnya"></button>
+          <button
+            class="cbtn"
+            id="bRepeat"
+            type="button"
+            aria-label="Ulangi semua"
+          ></button>
+
+          <button
+            class="cbtn"
+            id="bPrev"
+            type="button"
+            aria-label="Lagu sebelumnya"
+          ></button>
+
+          <button
+            class="cbtn big"
+            id="bPlay"
+            type="button"
+            aria-label="Putar"
+          ></button>
+
+          <button
+            class="cbtn"
+            id="bNext"
+            type="button"
+            aria-label="Lagu berikutnya"
+          ></button>
         </div>
+
         <p class="note" id="note"></p>
+
       </section>
+
+      <!-- =================================================
+           DAFTAR PUTAR
+      ================================================== -->
 
       <section class="card">
         <h2>Daftar putar</h2>
         <div id="list"></div>
       </section>
 
-      <button class="primary" type="button" onclick="location.href='index.html'">Kembali</button>
+      <!-- =================================================
+           TOMBOL KEMBALI
+      ================================================== -->
+
+      <button
+        class="primary"
+        type="button"
+        onclick="location.href='index.html'"
+      >
+        Kembali
+      </button>
+
     </div>
   </main>
 
-  <audio id="audio" preload="metadata" controlsList="nodownload noplaybackrate" hidden></audio>
+  <audio
+    id="audio"
+    preload="metadata"
+    controlsList="nodownload noplaybackrate"
+    hidden
+  ></audio>
+
+  <!-- =====================================================
+       JAVASCRIPT PEMUTAR MUSIK
+  ====================================================== -->
 
   <script>
   (function () {
     const $ = id => document.getElementById(id);
     const audio = $('audio');
 
-    /* ===== DAFTAR LAGU: tambah lagu baru cukup menambah satu baris di sini ===== */
+    /* ===== DAFTAR LAGU ===== */
+
     const playlist = [
-      { src: 'musik/musik1.mp3', title: 'Bintang 14 Hari Cover|kangen band', artist: 'PI7U' },
-      { src: 'musik/musik3.mp4', title: 'Shape of my Heart', artist: 'Backstreet Boys' },
-      { src: 'musik/Arsy Widianto, Brisia Jodie - Rindu Dalam Hati.mp3', title: 'Rindu Didalam hati', artist: 'Arsy Widianto, Brisia Jodie' },
-      { src: 'musik/Tiara Andini, Arsy Widianto - Cintanya Aku (Official Lyric Video).mp3', title: 'Cintanya Aku', artist: 'Tiara Andini, Arsy Widianto' },
-      { src: 'musik/Andmesh - Andaikan Kau Datang I Ost Miracle In Cell No.7 _08 September 2022 di Bioskop.mp3', title: 'Andaikan kau datang Kembali', artist: 'Andmesh' }
+      {
+        src: 'musik/musik1.mp3',
+        title: 'Bintang 14 Hari Cover|kangen band',
+        artist: 'PI7U'
+      },
+      {
+        src: 'musik/musik3.mp4',
+        title: 'Shape of my Heart',
+        artist: 'Backstreet Boys'
+      },
+      {
+        src: 'musik/Arsy Widianto, Brisia Jodie - Rindu Dalam Hati.mp3',
+        title: 'Rindu Didalam hati',
+        artist: 'Arsy Widianto, Brisia Jodie'
+      },
+      {
+        src: 'musik/Tiara Andini, Arsy Widianto - Cintanya Aku (Official Lyric Video).mp3',
+        title: 'Cintanya Aku',
+        artist: 'Tiara Andini, Arsy Widianto'
+      },
+      {
+        src: 'musik/Andmesh - Andaikan Kau Datang I Ost Miracle In Cell No.7 _08 September 2022 di Bioskop.mp3',
+        title: 'Andaikan kau datang Kembali',
+        artist: 'Andmesh'
+      }
     ];
+
+    /* ===== IKON PEMUTAR ===== */
 
     const ICON = {
       play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+
       pause: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+
       prev: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM9.5 12L18 18V6z"/></svg>',
+
       next: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>',
+
       all: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2zM17 17H7v-3l-4 4 4 4v-3h12v-6h-2z"/></svg>',
+
       one: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2zM17 17H7v-3l-4 4 4 4v-3h12v-6h-2z"/><text x="12" y="15.2" font-size="8" font-weight="700" text-anchor="middle">1</text></svg>'
     };
 
+    /* ===== PENYIMPANAN LOKAL ===== */
+
     const store = {
-      get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
-      set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} }
+      get: k => {
+        try {
+          return localStorage.getItem(k);
+        } catch (e) {
+          return null;
+        }
+      },
+
+      set: (k, v) => {
+        try {
+          localStorage.setItem(k, v);
+        } catch (e) {}
+      }
     };
 
-    let idx = -1, repeat = store.get('arinex_music_repeat') === 'one' ? 'one' : 'all';
-    let pendingSeek = null, errors = 0, lastSave = 0, dragging = false;
+    let idx = -1;
 
-    const fmt = s => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
-    const note = t => { $('note').textContent = t || ''; };
+    let repeat =
+      store.get('arinex_music_repeat') === 'one'
+        ? 'one'
+        : 'all';
+
+    let pendingSeek = null;
+    let errors = 0;
+    let lastSave = 0;
+    let dragging = false;
+
+    const fmt = s => {
+      s = Math.max(0, Math.floor(s || 0));
+
+      return (
+        Math.floor(s / 60) +
+        ':' +
+        String(s % 60).padStart(2, '0')
+      );
+    };
+
+    const note = t => {
+      $('note').textContent = t || '';
+    };
+
+    /* ===== SIMPAN POSISI PEMUTAR ===== */
 
     function save(force) {
       const now = Date.now();
-      if (!force && now - lastSave < 2000) return;
+
+      if (!force && now - lastSave < 2000) {
+        return;
+      }
+
       lastSave = now;
+
       store.set('arinex_music_track', idx);
       store.set('arinex_music_time', audio.currentTime || 0);
       store.set('arinex_music_playing', !audio.paused);
     }
 
-    /* ===== Tampilan ===== */
+    /* ===== TAMPILAN DAFTAR LAGU ===== */
+
     function renderList() {
-      const list = $('list'); list.innerHTML = '';
+      const list = $('list');
+
+      list.innerHTML = '';
+
       playlist.forEach((t, i) => {
         const b = document.createElement('button');
-        b.type = 'button'; b.className = 'row' + (i === idx ? ' on' : '');
-        const n = document.createElement('div'); n.className = 'n';
-        if (i === idx && !audio.paused) n.innerHTML = '<i class="eq"><b></b><b></b><b></b></i>'; else n.textContent = i + 1;
-        const box = document.createElement('div'); box.className = 't';
-        const s1 = document.createElement('strong'); s1.textContent = t.title;
-        const s2 = document.createElement('span'); s2.textContent = t.artist;
-        box.append(s1, s2); b.append(n, box);
-        b.onclick = () => (i === idx ? toggle() : load(i, true, 0));
+
+        b.type = 'button';
+        b.className = 'row' + (i === idx ? ' on' : '');
+
+        const n = document.createElement('div');
+
+        n.className = 'n';
+
+        if (i === idx && !audio.paused) {
+          n.innerHTML =
+            '<i class="eq"><b></b><b></b><b></b></i>';
+        } else {
+          n.textContent = i + 1;
+        }
+
+        const box = document.createElement('div');
+
+        box.className = 't';
+
+        const s1 = document.createElement('strong');
+        s1.textContent = t.title;
+
+        const s2 = document.createElement('span');
+        s2.textContent = t.artist;
+
+        box.append(s1, s2);
+        b.append(n, box);
+
+        b.onclick = () => (
+          i === idx
+            ? toggle()
+            : load(i, true, 0)
+        );
+
         list.append(b);
       });
     }
+
+    /* ===== PEMBARUAN TAMPILAN ===== */
+
     function ui() {
-      $('bPlay').innerHTML = audio.paused ? ICON.play : ICON.pause;
-      $('bPlay').setAttribute('aria-label', audio.paused ? 'Putar' : 'Jeda');
-      $('bPrev').innerHTML = ICON.prev; $('bNext').innerHTML = ICON.next;
-      $('bRepeat').innerHTML = repeat === 'one' ? ICON.one : ICON.all;
-      $('bRepeat').classList.toggle('on', repeat === 'one');
-      $('bRepeat').setAttribute('aria-label', repeat === 'one' ? 'Ulangi satu lagu' : 'Ulangi semua');
-      if (idx >= 0) { $('tTitle').textContent = playlist[idx].title; $('tArtist').textContent = playlist[idx].artist; }
+      $('bPlay').innerHTML =
+        audio.paused ? ICON.play : ICON.pause;
+
+      $('bPlay').setAttribute(
+        'aria-label',
+        audio.paused ? 'Putar' : 'Jeda'
+      );
+
+      $('bPrev').innerHTML = ICON.prev;
+      $('bNext').innerHTML = ICON.next;
+
+      $('bRepeat').innerHTML =
+        repeat === 'one' ? ICON.one : ICON.all;
+
+      $('bRepeat').classList.toggle(
+        'on',
+        repeat === 'one'
+      );
+
+      $('bRepeat').setAttribute(
+        'aria-label',
+        repeat === 'one'
+          ? 'Ulangi satu lagu'
+          : 'Ulangi semua'
+      );
+
+      if (idx >= 0) {
+        $('tTitle').textContent = playlist[idx].title;
+        $('tArtist').textContent = playlist[idx].artist;
+      }
+
       renderList();
     }
+
+    /* ===== PROGRES LAGU ===== */
+
     function progress() {
-      const d = audio.duration, c = audio.currentTime || 0, r = isFinite(d) && d > 0 ? c / d : 0;
+      const d = audio.duration;
+      const c = audio.currentTime || 0;
+
+      const r =
+        isFinite(d) && d > 0
+          ? c / d
+          : 0;
+
       $('fill').style.width = (r * 100) + '%';
-      $('seek').setAttribute('aria-valuenow', Math.round(r * 100));
-      $('tCur').textContent = fmt(c); $('tDur').textContent = fmt(isFinite(d) ? d : 0);
-      try { if (isFinite(d) && d > 0) navigator.mediaSession.setPositionState({ duration: d, position: Math.min(c, d), playbackRate: 1 }); } catch (e) {}
+
+      $('seek').setAttribute(
+        'aria-valuenow',
+        Math.round(r * 100)
+      );
+
+      $('tCur').textContent = fmt(c);
+
+      $('tDur').textContent =
+        fmt(isFinite(d) ? d : 0);
+
+      try {
+        if (
+          isFinite(d) &&
+          d > 0 &&
+          navigator.mediaSession
+        ) {
+          navigator.mediaSession.setPositionState({
+            duration: d,
+            position: Math.min(c, d),
+            playbackRate: 1
+          });
+        }
+      } catch (e) {}
     }
 
-    /* ===== Kontrol ===== */
+    /* ===== MEMUAT LAGU ===== */
+
     function load(i, autoplay, seekTo) {
-      idx = ((i % playlist.length) + playlist.length) % playlist.length;
-      audio.src = playlist[idx].src; audio.loop = repeat === 'one';
-      pendingSeek = seekTo || null; note('');
-      if (autoplay) audio.play().catch(() => note('Ketuk tombol putar untuk memulai.'));
-      mediaSession(); save(true); ui(); progress();
+      idx =
+        ((i % playlist.length) + playlist.length) %
+        playlist.length;
+
+      audio.src = playlist[idx].src;
+      audio.loop = repeat === 'one';
+
+      pendingSeek = seekTo || null;
+
+      note('');
+
+      if (autoplay) {
+        audio.play().catch(() => {
+          note('Ketuk tombol putar untuk memulai.');
+        });
+      }
+
+      mediaSession();
+      save(true);
+      ui();
+      progress();
     }
+
+    /* ===== PUTAR DAN JEDA ===== */
+
     function toggle() {
-      if (idx < 0) return load(0, true, 0);
-      if (audio.paused) audio.play().catch(() => note('Tidak dapat memutar lagu ini.')); else audio.pause();
+      if (idx < 0) {
+        return load(0, true, 0);
+      }
+
+      if (audio.paused) {
+        audio.play().catch(() => {
+          note('Tidak dapat memutar lagu ini.');
+        });
+      } else {
+        audio.pause();
+      }
     }
-    const step = d => load(idx < 0 ? 0 : idx + d, true, 0);
+
+    const step = d => {
+      load(
+        idx < 0 ? 0 : idx + d,
+        true,
+        0
+      );
+    };
+
+    /* ===== MEDIA SESSION ===== */
 
     function mediaSession() {
-      if (!('mediaSession' in navigator) || idx < 0) return;
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: playlist[idx].title, artist: playlist[idx].artist, album: 'Secret Message',
-        artwork: [{ src: 'img/icon-512.png', sizes: '512x512', type: 'image/png' }]
+      if (
+        !('mediaSession' in navigator) ||
+        idx < 0
+      ) {
+        return;
+      }
+
+      navigator.mediaSession.metadata =
+        new MediaMetadata({
+          title: playlist[idx].title,
+          artist: playlist[idx].artist,
+          album: 'Secret Message',
+
+          artwork: [
+            {
+              src: 'img/icon-512.png',
+              sizes: '512x512',
+              type: 'image/png'
+            }
+          ]
+        });
+
+      const h = (a, f) => {
+        try {
+          navigator.mediaSession.setActionHandler(a, f);
+        } catch (e) {}
+      };
+
+      h('play', () => audio.play());
+      h('pause', () => audio.pause());
+
+      h('previoustrack', () => step(-1));
+      h('nexttrack', () => step(1));
+
+      h('seekto', e => {
+        if (e.seekTime != null) {
+          audio.currentTime = e.seekTime;
+        }
       });
-      const h = (a, f) => { try { navigator.mediaSession.setActionHandler(a, f); } catch (e) {} };
-      h('play', () => audio.play()); h('pause', () => audio.pause());
-      h('previoustrack', () => step(-1)); h('nexttrack', () => step(1));
-      h('seekto', e => { if (e.seekTime != null) audio.currentTime = e.seekTime; });
     }
 
-    /* Lagu habis → otomatis lanjut ke lagu berikutnya (kembali ke awal setelah lagu terakhir) */
-    audio.addEventListener('ended', () => { if (repeat !== 'one') step(1); });
+    /* ===== EVENT AUDIO ===== */
+
+    audio.addEventListener('ended', () => {
+      if (repeat !== 'one') {
+        step(1);
+      }
+    });
+
     audio.addEventListener('loadedmetadata', () => {
-      if (pendingSeek) { try { audio.currentTime = pendingSeek; } catch (e) {} pendingSeek = null; }
+      if (pendingSeek) {
+        try {
+          audio.currentTime = pendingSeek;
+        } catch (e) {}
+
+        pendingSeek = null;
+      }
+
       progress();
     });
-    audio.addEventListener('timeupdate', () => { if (!dragging) progress(); save(false); });
-    audio.addEventListener('play', () => { ui(); save(true); });
-    audio.addEventListener('pause', () => { ui(); save(true); });
-    audio.addEventListener('playing', () => { errors = 0; note(''); });
-    audio.addEventListener('error', () => {
-      if (idx < 0 || !audio.getAttribute('src')) return;
-      errors++; note('Berkas musik tidak ditemukan, melompat ke lagu berikutnya.');
-      if (errors < playlist.length) step(1); else { errors = 0; note('Tidak ada lagu yang bisa diputar. Periksa folder musik/.'); }
+
+    audio.addEventListener('timeupdate', () => {
+      if (!dragging) {
+        progress();
+      }
+
+      save(false);
     });
+
+    audio.addEventListener('play', () => {
+      ui();
+      save(true);
+    });
+
+    audio.addEventListener('pause', () => {
+      ui();
+      save(true);
+    });
+
+    audio.addEventListener('playing', () => {
+      errors = 0;
+      note('');
+    });
+
+    audio.addEventListener('error', () => {
+      if (
+        idx < 0 ||
+        !audio.getAttribute('src')
+      ) {
+        return;
+      }
+
+      errors++;
+
+      note(
+        'Berkas musik tidak ditemukan, melompat ke lagu berikutnya.'
+      );
+
+      if (errors < playlist.length) {
+        step(1);
+      } else {
+        errors = 0;
+
+        note(
+          'Tidak ada lagu yang bisa diputar. Periksa folder musik/.'
+        );
+      }
+    });
+
+    /* ===== TOMBOL KONTROL ===== */
 
     $('bPlay').onclick = toggle;
-    $('bPrev').onclick = () => (audio.currentTime > 3 ? (audio.currentTime = 0) : step(-1));
-    $('bNext').onclick = () => step(1);
-    $('bRepeat').onclick = () => {
-      repeat = repeat === 'all' ? 'one' : 'all'; audio.loop = repeat === 'one';
-      store.set('arinex_music_repeat', repeat); ui();
+
+    $('bPrev').onclick = () => {
+      if (audio.currentTime > 3) {
+        audio.currentTime = 0;
+      } else {
+        step(-1);
+      }
     };
 
-    /* Geser progres */
+    $('bNext').onclick = () => step(1);
+
+    $('bRepeat').onclick = () => {
+      repeat =
+        repeat === 'all'
+          ? 'one'
+          : 'all';
+
+      audio.loop = repeat === 'one';
+
+      store.set('arinex_music_repeat', repeat);
+
+      ui();
+    };
+
+    /* ===== GESER PROGRES LAGU ===== */
+
     const seek = $('seek');
+
     const seekTo = e => {
-      if (!isFinite(audio.duration)) return;
+      if (!isFinite(audio.duration)) {
+        return;
+      }
+
       const r = seek.getBoundingClientRect();
-      audio.currentTime = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * audio.duration;
+
+      audio.currentTime =
+        Math.min(
+          1,
+          Math.max(
+            0,
+            (e.clientX - r.left) / r.width
+          )
+        ) * audio.duration;
+
       progress();
     };
-    seek.addEventListener('pointerdown', e => { dragging = true; seek.setPointerCapture(e.pointerId); seekTo(e); });
-    seek.addEventListener('pointermove', e => { if (dragging) seekTo(e); });
-    ['pointerup', 'pointercancel'].forEach(t => seek.addEventListener(t, () => { dragging = false; }));
 
-    /* Pulihkan lagu terakhir (browser memblokir autoplay saat halaman dibuka, jadi menunggu ketukan) */
-    const st = parseInt(store.get('arinex_music_track'), 10);
+    seek.addEventListener('pointerdown', e => {
+      dragging = true;
+
+      seek.setPointerCapture(e.pointerId);
+
+      seekTo(e);
+    });
+
+    seek.addEventListener('pointermove', e => {
+      if (dragging) {
+        seekTo(e);
+      }
+    });
+
+    ['pointerup', 'pointercancel'].forEach(t => {
+      seek.addEventListener(t, () => {
+        dragging = false;
+      });
+    });
+
+    /* ===== PULIHKAN LAGU TERAKHIR ===== */
+
+    const st = parseInt(
+      store.get('arinex_music_track'),
+      10
+    );
+
     ui();
-    if (Number.isInteger(st) && st >= 0 && st < playlist.length) {
-      load(st, false, parseFloat(store.get('arinex_music_time')) || 0);
-      if (store.get('arinex_music_playing') === 'true') note('Ketuk tombol putar untuk melanjutkan.');
+
+    if (
+      Number.isInteger(st) &&
+      st >= 0 &&
+      st < playlist.length
+    ) {
+      load(
+        st,
+        false,
+        parseFloat(store.get('arinex_music_time')) || 0
+      );
+
+      if (
+        store.get('arinex_music_playing') === 'true'
+      ) {
+        note('Ketuk tombol putar untuk melanjutkan.');
+      }
     }
 
-    /* ===== Cegah salin, seret, dan simpan gambar (hanya pencegah dasar) ===== */
-    ['contextmenu', 'dragstart', 'selectstart', 'copy', 'cut'].forEach(t => document.addEventListener(t, e => e.preventDefault()));
-    document.addEventListener('keydown', e => {
-      if ((e.ctrlKey || e.metaKey) && ['c', 's', 'u', 'p', 'a'].includes(e.key.toLowerCase())) e.preventDefault();
+    /* ===== PENCEGAHAN SALIN DAN SERET ===== */
+
+    [
+      'contextmenu',
+      'dragstart',
+      'selectstart',
+      'copy',
+      'cut'
+    ].forEach(t => {
+      document.addEventListener(t, e => {
+        e.preventDefault();
+      });
     });
+
+    document.addEventListener('keydown', e => {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        ['c', 's', 'u', 'p', 'a'].includes(
+          e.key.toLowerCase()
+        )
+      ) {
+        e.preventDefault();
+      }
+    });
+
   })();
   </script>
+
 </body>
-</html>
+  </html>
